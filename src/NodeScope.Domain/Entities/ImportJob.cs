@@ -187,6 +187,29 @@ public sealed class ImportJob : EntityBase
         CompletedAt = completedAtUtc ?? DateTimeOffset.UtcNow;
     }
 
+    /// <summary>
+    /// Clears completion metadata so the ingestion worker can rerun the processor against the stored upload file.
+    /// </summary>
+    /// <remarks>Relational children (columns, sampled records, issues, artifact rows) should be deleted by the orchestrator beforehand.</remarks>
+    public void ResetForReprocessing()
+    {
+        if (Status != ImportJobStatus.Completed && Status != ImportJobStatus.Failed)
+        {
+            throw new InvalidOperationException("Only completed or failed imports can be requeued for processing.");
+        }
+
+        Status = ImportJobStatus.Pending;
+        StartedAt = null;
+        CompletedAt = null;
+        ProcessorVersion = null;
+        RowCount = null;
+        IssueCount = null;
+        ReportHtmlPath = null;
+        NormalizedJsonPath = null;
+        SummaryJson = null;
+        FailureMessage = null;
+    }
+
     private static string? NormalizeFailureMessage(string? failureMessage)
     {
         if (string.IsNullOrWhiteSpace(failureMessage))
