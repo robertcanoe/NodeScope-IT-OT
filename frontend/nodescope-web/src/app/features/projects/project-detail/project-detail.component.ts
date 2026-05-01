@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
   ElementRef,
@@ -587,8 +588,20 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
       .getArtifactBlob(importId, 'report')
       .pipe(
         take(1),
-        catchError(() => {
-          this.error.set('Could not open the HTML report (missing file or network error).');
+        catchError((err: unknown) => {
+          let msg = 'Could not open the HTML report.';
+          if (err instanceof HttpErrorResponse) {
+            if (err.status === 401) {
+              msg = 'Session expired. Sign in again to open the report.';
+            } else if (err.status === 404) {
+              msg = 'Report not found (import not completed or file missing on server).';
+            } else if (err.status === 0) {
+              msg = 'Cannot reach the API. Check that the backend is running and CORS allows this origin.';
+            } else {
+              msg = `Could not open report (HTTP ${err.status}).`;
+            }
+          }
+          this.error.set(msg);
           return of(null);
         }),
       )
@@ -616,8 +629,25 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
       .getArtifactBlob(importId, kind)
       .pipe(
         take(1),
-        catchError(() => {
-          this.error.set('Download failed (artifact may be missing).');
+        catchError((err: unknown) => {
+          let msg = 'Download failed.';
+          if (kind === 'normalized') {
+            msg = 'Could not download normalized JSON.';
+          } else if (kind === 'issues') {
+            msg = 'Could not download issues CSV.';
+          }
+          if (err instanceof HttpErrorResponse) {
+            if (err.status === 401) {
+              msg = 'Session expired. Sign in again to download artifacts.';
+            } else if (err.status === 404) {
+              msg = 'File not found for this import.';
+            } else if (err.status === 0) {
+              msg = 'Cannot reach the API. Check backend and CORS.';
+            } else {
+              msg = `${msg} (HTTP ${err.status})`;
+            }
+          }
+          this.error.set(msg);
           return of(null);
         }),
       )

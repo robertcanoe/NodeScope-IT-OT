@@ -31,13 +31,6 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'projects/:projectId',
-        loadComponent: () =>
-          import('./features/projects/project-detail/project-detail.component').then(
-            (module) => module.ProjectDetailComponent,
-          ),
-      },
-      {
         path: 'projects/:projectId/imports/:importId/issues',
         loadComponent: () =>
           import('./features/imports/import-issues-page.component').then((m) => m.ImportIssuesPageComponent),
@@ -46,6 +39,13 @@ export const routes: Routes = [
         path: 'projects/:projectId/imports/:importId/records',
         loadComponent: () =>
           import('./features/imports/import-records-page.component').then((m) => m.ImportRecordsPageComponent),
+      },
+      {
+        path: 'projects/:projectId',
+        loadComponent: () =>
+          import('./features/projects/project-detail/project-detail.component').then(
+            (module) => module.ProjectDetailComponent,
+          ),
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

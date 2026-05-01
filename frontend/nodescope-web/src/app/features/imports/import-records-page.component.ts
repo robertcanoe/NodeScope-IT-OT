@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import { Subscription } from 'rxjs';
 import { catchError, finalize, of } from 'rxjs';
 
 import { ImportsApiService } from '../../core/imports-api.service';
+import { coercePagedResult } from '../../shared/utils/api-helpers';
 
 @Component({
   standalone: true,
@@ -176,8 +178,7 @@ export class ImportRecordsPageComponent implements OnInit, OnDestroy {
     this.routeSub = this.route.paramMap.subscribe((params) => {
       this.projectId.set(params.get('projectId') ?? '');
       this.importId.set(params.get('importId') ?? '');
-      this.pageIndex.set(0);
-      this.reload();
+      this.reload(false);
     });
   }
 
@@ -185,27 +186,63 @@ export class ImportRecordsPageComponent implements OnInit, OnDestroy {
     this.routeSub?.unsubscribe();
   }
 
-  protected reload(): void {
+  protected reload(preservePageIndex = false, paginationRetry = 0): void {
     const iid = this.importId();
     if (!iid) {
       this.error.set('Missing import identifier.');
       return;
     }
 
+    if (!preservePageIndex) {
+      this.pageIndex.set(0);
+      paginationRetry = 0;
+    }
+
+    const pageIndexRequested = this.pageIndex();
+    const pageSizeRequested = this.pageSize();
+
     this.loading.set(true);
     this.error.set(null);
 
     this.importsApi
-      .listDatasetRecords(iid, this.pageIndex() + 1, this.pageSize(), this.searchModel || null)
+      .listDatasetRecords(iid, pageIndexRequested + 1, pageSizeRequested, this.searchModel || null)
       .pipe(
-        catchError(() => {
-          this.error.set('Could not load dataset records.');
-          return of({ items: [], totalCount: 0, page: 1, pageSize: this.pageSize() });
+        catchError((err: unknown) => {
+          let msg = 'Could not load dataset records.';
+          if (err instanceof HttpErrorResponse) {
+            if (err.status === 401) {
+              msg = 'Session expired or not signed in. Open the app again from the login page.';
+            } else if (err.status === 404) {
+              msg = 'Import not found or you do not have access.';
+            } else if (err.status === 0) {
+              msg = 'Cannot reach the API. Is the backend running and CORS allowing this origin?';
+            } else {
+              msg = `Could not load records (HTTP ${err.status}).`;
+            }
+          }
+          this.error.set(msg);
+          return of(null);
         }),
         finalize(() => this.loading.set(false)),
       )
-      .subscribe((page) => {
-        this.rows.set(page.items ?? []);
+      .subscribe((raw) => {
+        if (raw === null) {
+          this.rows.set([]);
+          this.total.set(0);
+          return;
+        }
+
+        const page = coercePagedResult<{ recordIndex: number; payloadJson: string }>(raw, pageSizeRequested);
+        const size = Math.max(1, this.pageSize());
+        const maxIdx = Math.max(0, Math.ceil(page.totalCount / size) - 1);
+
+        if (pageIndexRequested > maxIdx && paginationRetry < 2) {
+          this.pageIndex.set(maxIdx);
+          this.reload(true, paginationRetry + 1);
+          return;
+        }
+
+        this.rows.set(page.items);
         this.total.set(page.totalCount);
       });
   }
@@ -213,6 +250,6 @@ export class ImportRecordsPageComponent implements OnInit, OnDestroy {
   protected onPage(ev: PageEvent): void {
     this.pageIndex.set(ev.pageIndex);
     this.pageSize.set(ev.pageSize);
-    this.reload();
+    this.reload(true, 0);
   }
 }
