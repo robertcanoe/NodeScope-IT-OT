@@ -9,6 +9,7 @@ import {
   ViewChild,
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
@@ -20,13 +21,14 @@ import { catchError, finalize, of, take } from 'rxjs';
 import { ImportsApiService } from '../../../core/imports-api.service';
 import { ProjectsApiService } from '../../../core/projects-api.service';
 import type { ProjectResponse } from '../../../shared/models/project.models';
-import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/import.models';
+import { ImportJobStatus, type CompareImportsResponse, type ImportJobSummary } from '../../../shared/models/import.models';
 
 @Component({
   standalone: true,
   selector: 'app-project-detail',
   imports: [
     CommonModule,
+    FormsModule,
     RouterLink,
     MatCardModule,
     MatButtonModule,
@@ -151,15 +153,26 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
               <ng-container matColumnDef="actions">
                 <th mat-header-cell *matHeaderCellDef>Outputs</th>
                 <td mat-cell *matCellDef="let row">
-                  @if (row.status === ImportJobStatus.Completed) {
-                    <div class="row-actions">
+                  <div class="row-actions">
+                    @if (row.status === ImportJobStatus.Completed || row.status === ImportJobStatus.Failed) {
+                      <a mat-stroked-button [routerLink]="['/projects', ws.id, 'imports', row.id, 'issues']">Issues</a>
+                      <a mat-stroked-button [routerLink]="['/projects', ws.id, 'imports', row.id, 'records']">Rows</a>
+                    }
+                    @if (row.status === ImportJobStatus.Completed) {
                       <button type="button" mat-stroked-button (click)="openReport(row.id)">Report</button>
                       <button type="button" mat-stroked-button (click)="downloadNormalized(row.id)">JSON</button>
                       <button type="button" mat-stroked-button (click)="downloadIssues(row.id)">Issues CSV</button>
-                    </div>
-                  } @else {
-                    <span class="muted">—</span>
-                  }
+                    }
+                    @if (
+                      row.status === ImportJobStatus.Completed || row.status === ImportJobStatus.Failed
+                    ) {
+                      <button type="button" mat-stroked-button color="primary" (click)="reprocessImport(ws.id, row.id)">
+                        Re-run analysis
+                      </button>
+                    } @else if (row.status !== ImportJobStatus.Completed && row.status !== ImportJobStatus.Failed) {
+                      <span class="muted">—</span>
+                    }
+                  </div>
                 </td>
               </ng-container>
 
@@ -168,6 +181,91 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
             </table>
           }
         </mat-card>
+
+        @if (imports().length >= 2) {
+          <mat-card appearance="outlined" class="compare-card">
+            <div class="card-header">
+              <h2>Compare two imports</h2>
+              <p class="muted">Pick historical runs to inspect row/issue deltas and differing issue codes.</p>
+            </div>
+            <mat-divider />
+            <div class="compare-controls">
+              <label class="field">
+                <span>Baseline</span>
+                <select class="native-select" [(ngModel)]="compareLeftId">
+                  @for (opt of imports(); track opt.id) {
+                    <option [value]="opt.id">{{ opt.originalFileName }} — {{ describe(opt.status) }}</option>
+                  }
+                </select>
+              </label>
+              <label class="field">
+                <span>Candidate</span>
+                <select class="native-select" [(ngModel)]="compareRightId">
+                  @for (opt of imports(); track opt.id) {
+                    <option [value]="opt.id">{{ opt.originalFileName }} — {{ describe(opt.status) }}</option>
+                  }
+                </select>
+              </label>
+              <button
+                type="button"
+                mat-flat-button
+                color="primary"
+                [disabled]="compareLoading()"
+                (click)="runCompare(ws.id)"
+              >
+                @if (compareLoading()) {
+                  Comparing…
+                } @else {
+                  Compare
+                }
+              </button>
+            </div>
+            @if (compareError()) {
+              <p class="compare-error">{{ compareError() }}</p>
+            }
+            @if (comparison(); as cmp) {
+              <div class="compare-grid">
+                <div>
+                  <h3>Baseline</h3>
+                  <p class="muted">{{ cmp.left.originalFileName }}</p>
+                  <dl>
+                    <dt>Rows</dt>
+                    <dd>{{ cmp.left.rowCount ?? '—' }}</dd>
+                    <dt>Issues</dt>
+                    <dd>{{ cmp.left.issueCount ?? '—' }}</dd>
+                    <dt>Dominant type</dt>
+                    <dd>{{ cmp.left.dominantType ?? 'n/a' }}</dd>
+                  </dl>
+                </div>
+                <div>
+                  <h3>Candidate</h3>
+                  <p class="muted">{{ cmp.right.originalFileName }}</p>
+                  <dl>
+                    <dt>Rows</dt>
+                    <dd>{{ cmp.right.rowCount ?? '—' }}</dd>
+                    <dt>Issues</dt>
+                    <dd>{{ cmp.right.issueCount ?? '—' }}</dd>
+                    <dt>Dominant type</dt>
+                    <dd>{{ cmp.right.dominantType ?? 'n/a' }}</dd>
+                  </dl>
+                </div>
+              </div>
+              <div class="deltas muted">
+                <p>Δ Rows: {{ cmp.rowCountDelta ?? 'n/a' }} · Δ Issues: {{ cmp.issueCountDelta ?? 'n/a' }}</p>
+                <div class="code-lists">
+                  <div>
+                    <strong>Codes only in baseline</strong>
+                    <pre>{{ cmp.issueCodesOnlyInLeft.length ? cmp.issueCodesOnlyInLeft.join('\n') : '—' }}</pre>
+                  </div>
+                  <div>
+                    <strong>Codes only in candidate</strong>
+                    <pre>{{ cmp.issueCodesOnlyInRight.length ? cmp.issueCodesOnlyInRight.join('\n') : '—' }}</pre>
+                  </div>
+                </div>
+              </div>
+            }
+          </mat-card>
+        }
       }
     </section>
   `,
@@ -234,6 +332,82 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
       flex-wrap: wrap;
       gap: 8px;
       padding: 8px 0;
+    }
+
+    .compare-card {
+      padding: 0 0 20px;
+
+      .card-header {
+        padding: 16px 20px 12px;
+      }
+
+      .compare-controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+        padding: 16px 20px;
+        align-items: flex-end;
+
+        .field {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: rgba(15, 23, 42, 0.5);
+        }
+
+        .native-select {
+          padding: 10px 12px;
+          border-radius: 8px;
+          border: 1px solid rgba(15, 23, 42, 0.2);
+          font: inherit;
+        }
+      }
+
+      .compare-error {
+        color: #b91c1c;
+        margin: 0 20px 12px;
+      }
+
+      .compare-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        padding: 0 20px;
+      }
+
+      .compare-grid h3 {
+        margin: 0 0 4px;
+      }
+
+      dl {
+        margin: 0;
+        display: grid;
+        grid-template-columns: 120px 1fr;
+        gap: 4px 8px;
+      }
+
+      .deltas {
+        padding: 16px 20px 0;
+      }
+
+      .code-lists {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 12px;
+
+        pre {
+          margin: 8px 0 0;
+          padding: 10px;
+          background: rgba(248, 250, 252, 0.9);
+          border-radius: 8px;
+          font-size: 12px;
+          max-height: 160px;
+          overflow: auto;
+        }
+      }
     }
 
     .status-cell {
@@ -330,6 +504,12 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   protected readonly uploading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly latestSummary = signal<ImportJobSummary | null>(null);
+  protected readonly comparison = signal<CompareImportsResponse | null>(null);
+  protected readonly compareLoading = signal(false);
+  protected readonly compareError = signal<string | null>(null);
+
+  protected compareLeftId = '';
+  protected compareRightId = '';
 
   protected readonly importColumns = ['file', 'status', 'completed', 'actions'] as const;
 
@@ -438,6 +618,47 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
       });
   }
 
+  protected runCompare(projectId: string): void {
+    if (!this.compareLeftId || !this.compareRightId || this.compareLeftId === this.compareRightId) {
+      this.compareError.set('Select two different imports to compare.');
+      return;
+    }
+
+    this.compareLoading.set(true);
+    this.compareError.set(null);
+    this.importsApi
+      .compare(projectId, this.compareLeftId, this.compareRightId)
+      .pipe(
+        take(1),
+        catchError(() => {
+          this.compareError.set('Comparison failed — verify both imports belong to this workspace.');
+          return of(null);
+        }),
+        finalize(() => this.compareLoading.set(false)),
+      )
+      .subscribe((dto) => {
+        this.comparison.set(dto);
+      });
+  }
+
+  protected reprocessImport(projectId: string, importId: string): void {
+    this.error.set(null);
+    this.importsApi
+      .reprocess(projectId, importId)
+      .pipe(
+        take(1),
+        catchError(() => {
+          this.error.set('Re-run rejected (already queued or unreachable).');
+          return of(undefined);
+        }),
+      )
+      .subscribe(() => {
+        this.latestSummary.set(null);
+        this.startPollingLatest(importId);
+        this.reloadImports(projectId);
+      });
+  }
+
   protected onDatasetChange(): void {
     const picker = this.pickerRef?.nativeElement;
 
@@ -492,7 +713,18 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
         finalize(() => this.importsLoading.set(false)),
       )
       .subscribe((rows) => {
-        this.imports.set(rows ?? []);
+        const list = rows ?? [];
+        this.imports.set(list);
+        if (list.length >= 2 && !this.compareLeftId) {
+          this.compareLeftId = list[0]!.id;
+          this.compareRightId = list[1]!.id;
+        }
+
+        if (list.length < 2) {
+          this.compareLeftId = '';
+          this.compareRightId = '';
+          this.comparison.set(null);
+        }
       });
   }
 
