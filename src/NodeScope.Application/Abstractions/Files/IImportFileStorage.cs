@@ -29,4 +29,9 @@ public interface IImportFileStorage
     /// Absolute path to the artifact folder for the import (no directory creation).
     /// </summary>
     string GetArtifactsRootPhysicalPath(Guid projectId, Guid importJobId);
+
+    /// <summary>
+    /// Deletes generated artifacts under <see cref="GetArtifactsRootPhysicalPath"/> before a manual re-run.
+    /// </summary>
+    Task ClearArtifactsDirectoryAsync(Guid projectId, Guid importJobId, CancellationToken cancellationToken);
 }
