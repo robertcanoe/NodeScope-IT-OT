@@ -71,6 +71,8 @@ public sealed class LocalImportFileStorage(IHostEnvironment environment, IOption
     private string GetArtifactsPhysicalPath(Guid projectId, Guid importJobId) =>
         Path.Combine(ResolvePhysicalRoot(), "artifacts", projectId.ToString("D"), importJobId.ToString("D"));
 
+    /// <inheritdoc />
+    public string GetArtifactsRootPhysicalPath(Guid projectId, Guid importJobId) => GetArtifactsPhysicalPath(projectId, importJobId);
     private string GetUploadDirectory(Guid projectId, Guid importJobId) =>
         Path.Combine(ResolvePhysicalRoot(), "uploads", projectId.ToString("D"), importJobId.ToString("D"));
 }

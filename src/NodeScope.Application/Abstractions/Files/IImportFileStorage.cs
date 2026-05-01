@@ -24,4 +24,9 @@ public interface IImportFileStorage
     /// Returns an absolute filesystem path rooted at configured storage roots.
     /// </summary>
     string GetArtifactsDirectory(Guid projectId, Guid importJobId);
+
+    /// <summary>
+    /// Absolute path to the artifact folder for the import (no directory creation).
+    /// </summary>
+    string GetArtifactsRootPhysicalPath(Guid projectId, Guid importJobId);
 }

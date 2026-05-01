@@ -14,7 +14,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTableModule } from '@angular/material/table';
-import { catchError, finalize, of } from 'rxjs';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { catchError, finalize, of, take } from 'rxjs';
 
 import { ImportsApiService } from '../../../core/imports-api.service';
 import { ProjectsApiService } from '../../../core/projects-api.service';
@@ -32,6 +33,7 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
     MatDividerModule,
     MatTableModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
   ],
   template: `
     <section class="page">
@@ -102,6 +104,12 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
                 <div class="value">{{ live.dominantNamespace ?? 'n/a' }}</div>
               </div>
             </div>
+            @if (live.status === ImportJobStatus.Failed && live.failureMessage) {
+              <div class="failure-panel">
+                <h3 class="failure-heading">Failure detail</h3>
+                <pre class="failure-body">{{ live.failureMessage }}</pre>
+              </div>
+            }
           </mat-card>
         }
 
@@ -125,11 +133,34 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
               </ng-container>
               <ng-container matColumnDef="status">
                 <th mat-header-cell *matHeaderCellDef>Status</th>
-                <td mat-cell *matCellDef="let row">{{ describe(row.status) }}</td>
+                <td mat-cell *matCellDef="let row">
+                  <span
+                    class="status-cell"
+                    [matTooltip]="row.failureMessage ?? ''"
+                    [matTooltipDisabled]="row.status !== ImportJobStatus.Failed || !row.failureMessage"
+                    matTooltipShowDelay="200"
+                  >
+                    {{ describe(row.status) }}
+                  </span>
+                </td>
               </ng-container>
               <ng-container matColumnDef="completed">
                 <th mat-header-cell *matHeaderCellDef>Finished</th>
                 <td mat-cell *matCellDef="let row">{{ row.completedAt ? (row.completedAt | date: 'short') : '—' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Outputs</th>
+                <td mat-cell *matCellDef="let row">
+                  @if (row.status === ImportJobStatus.Completed) {
+                    <div class="row-actions">
+                      <button type="button" mat-stroked-button (click)="openReport(row.id)">Report</button>
+                      <button type="button" mat-stroked-button (click)="downloadNormalized(row.id)">JSON</button>
+                      <button type="button" mat-stroked-button (click)="downloadIssues(row.id)">Issues CSV</button>
+                    </div>
+                  } @else {
+                    <span class="muted">—</span>
+                  }
+                </td>
               </ng-container>
 
               <tr mat-header-row *matHeaderRowDef="importColumns"></tr>
@@ -198,6 +229,22 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
       width: 100%;
     }
 
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px 0;
+    }
+
+    .status-cell {
+      cursor: default;
+      border-bottom: 1px dotted transparent;
+    }
+
+    .status-cell:hover {
+      border-bottom-color: rgba(15, 23, 42, 0.25);
+    }
+
     .banner {
       border-color: #f97316;
       color: #c2410c;
@@ -206,6 +253,35 @@ import { ImportJobStatus, type ImportJobSummary } from '../../../shared/models/i
 
     .inspector {
       padding: 18px 22px;
+
+      .failure-panel {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid rgba(15, 23, 42, 0.1);
+      }
+
+      .failure-heading {
+        margin: 0 0 8px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: rgba(185, 28, 28, 0.85);
+      }
+
+      .failure-body {
+        margin: 0;
+        padding: 12px 14px;
+        background: rgba(254, 242, 242, 0.8);
+        border-radius: 8px;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 280px;
+        overflow: auto;
+        color: #7f1d1d;
+        border: 1px solid rgba(248, 113, 113, 0.35);
+      }
 
       .grid {
         display: grid;
@@ -243,6 +319,8 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly importsApi = inject(ImportsApiService);
 
+  protected readonly ImportJobStatus = ImportJobStatus;
+
   @ViewChild('datasetPicker')
   protected readonly pickerRef?: ElementRef<HTMLInputElement>;
 
@@ -253,7 +331,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
   protected readonly error = signal<string | null>(null);
   protected readonly latestSummary = signal<ImportJobSummary | null>(null);
 
-  protected readonly importColumns = ['file', 'status', 'completed'] as const;
+  protected readonly importColumns = ['file', 'status', 'completed', 'actions'] as const;
 
   private activePoll?: ReturnType<typeof setInterval>;
   private routedProjectId: string | null = null;
@@ -304,6 +382,60 @@ export class ProjectDetailComponent implements OnInit, OnDestroy {
       default:
         return String(status);
     }
+  }
+
+  protected openReport(importId: string): void {
+    this.importsApi
+      .getArtifactBlob(importId, 'report')
+      .pipe(
+        take(1),
+        catchError(() => {
+          this.error.set('Could not open the HTML report (missing file or network error).');
+          return of(null);
+        }),
+      )
+      .subscribe((blob) => {
+        if (!blob) {
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener,noreferrer');
+        window.setTimeout(() => URL.revokeObjectURL(url), 120_000);
+      });
+  }
+
+  protected downloadNormalized(importId: string): void {
+    this.saveBlob(importId, 'normalized', `${importId}-normalized.json`);
+  }
+
+  protected downloadIssues(importId: string): void {
+    this.saveBlob(importId, 'issues', `${importId}-issues.csv`);
+  }
+
+  private saveBlob(importId: string, kind: 'normalized' | 'issues', fileName: string): void {
+    this.importsApi
+      .getArtifactBlob(importId, kind)
+      .pipe(
+        take(1),
+        catchError(() => {
+          this.error.set('Download failed (artifact may be missing).');
+          return of(null);
+        }),
+      )
+      .subscribe((blob) => {
+        if (!blob) {
+          return;
+        }
+
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = fileName;
+        anchor.rel = 'noopener';
+        anchor.click();
+        window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      });
   }
 
   protected onDatasetChange(): void {

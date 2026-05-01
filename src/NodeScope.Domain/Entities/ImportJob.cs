@@ -96,6 +96,11 @@ public sealed class ImportJob : EntityBase
     public string? SummaryJson { get; private set; }
 
     /// <summary>
+    /// Gets a human-readable failure reason when <see cref="Status"/> is <see cref="ImportJobStatus.Failed"/>.
+    /// </summary>
+    public string? FailureMessage { get; private set; }
+
+    /// <summary>
     /// Gets column profiles derived from this import.
     /// </summary>
     public ICollection<DatasetColumn> DatasetColumns { get; private set; } = new List<DatasetColumn>();
@@ -160,6 +165,7 @@ public sealed class ImportJob : EntityBase
         ReportHtmlPath = NormalizeOptionalPath(reportHtmlPath);
         NormalizedJsonPath = NormalizeOptionalPath(normalizedJsonPath);
         SummaryJson = summaryJson;
+        FailureMessage = null;
         Status = ImportJobStatus.Completed;
         CompletedAt = completedAtUtc ?? DateTimeOffset.UtcNow;
     }
@@ -167,16 +173,30 @@ public sealed class ImportJob : EntityBase
     /// <summary>
     /// Marks failure and optionally clears partial artifact pointers according to orchestration policy.
     /// </summary>
+    /// <param name="failureMessage">Optional diagnostic text for operators and the SPA.</param>
     /// <param name="completedAtUtc">Failure timestamp.</param>
-    public void MarkFailed(DateTimeOffset? completedAtUtc = null)
+    public void MarkFailed(string? failureMessage = null, DateTimeOffset? completedAtUtc = null)
     {
         if (Status is ImportJobStatus.Completed)
         {
             throw new InvalidOperationException("Completed imports cannot transition to failed.");
         }
 
+        FailureMessage = NormalizeFailureMessage(failureMessage);
         Status = ImportJobStatus.Failed;
         CompletedAt = completedAtUtc ?? DateTimeOffset.UtcNow;
+    }
+
+    private static string? NormalizeFailureMessage(string? failureMessage)
+    {
+        if (string.IsNullOrWhiteSpace(failureMessage))
+        {
+            return null;
+        }
+
+        const int maxChars = 16_384;
+        var trimmed = failureMessage.Trim();
+        return trimmed.Length <= maxChars ? trimmed : trimmed[..maxChars];
     }
 
     private static string? NormalizeOptionalPath(string? path)

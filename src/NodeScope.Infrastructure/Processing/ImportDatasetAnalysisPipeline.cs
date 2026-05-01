@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
@@ -71,7 +72,11 @@ public sealed class ImportDatasetAnalysisPipeline(
             if (!File.Exists(inputFullPath))
             {
                 logger.LogError("Uploaded payload missing under {PhysicalPath}", inputFullPath);
-                await PersistFailureAsync(jobId, cancellationToken).ConfigureAwait(false);
+                await PersistFailureAsync(
+                        jobId,
+                        $"Uploaded payload not found at '{inputFullPath}'.",
+                        cancellationToken)
+                    .ConfigureAwait(false);
                 return true;
             }
 
@@ -107,10 +112,11 @@ public sealed class ImportDatasetAnalysisPipeline(
                     .ConfigureAwait(false);
             }
 
-            if (!subprocess.HasExited || subprocess.ExitCode != 0 || decoded is null || !decoded.Success)
+            if (subprocess.ExitCode != 0 || decoded is null || !decoded.Success)
             {
-                logger.LogError("Python ingestion failed ({JobId})", jobId);
-                await PersistFailureAsync(jobId, cancellationToken).ConfigureAwait(false);
+                var failureSummary = ComposePythonFailureSummary(subprocess.ExitCode, stderrDiagnostics, decoded);
+                logger.LogError("Python ingestion failed ({JobId}): {Reason}", jobId, failureSummary);
+                await PersistFailureAsync(jobId, failureSummary, cancellationToken).ConfigureAwait(false);
                 return true;
             }
 
@@ -139,7 +145,7 @@ public sealed class ImportDatasetAnalysisPipeline(
         catch (Exception ex)
         {
             logger.LogError(ex, "Unhandled exception while analysing import {JobId}", jobId);
-            await PersistFailureAsync(jobId, CancellationToken.None).ConfigureAwait(false);
+            await PersistFailureAsync(jobId, ex.ToString(), CancellationToken.None).ConfigureAwait(false);
             return true;
         }
     }
@@ -302,7 +308,40 @@ public sealed class ImportDatasetAnalysisPipeline(
             : NormalizeArtifactPhysicalPath(pathFragment!, artifactDirectory).Replace('\\', '/');
     }
 
-    private async Task PersistFailureAsync(Guid jobId, CancellationToken cancellationToken)
+    private static string ComposePythonFailureSummary(int exitCode, string stderr, PythonJobResultEnvelope? decoded)
+    {
+        StringBuilder sb = new();
+        sb.Append("Python ingestion failed (exit code ").Append(exitCode).Append(')');
+        if (!string.IsNullOrWhiteSpace(decoded?.Detail))
+        {
+            sb.Append(". ").Append(decoded.Detail.Trim());
+        }
+        else if (decoded is { Success: false })
+        {
+            sb.Append(". The pipeline reported success=false.");
+        }
+
+        if (decoded is null)
+        {
+            sb.Append(". pipeline-result.json was missing or invalid.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(stderr))
+        {
+            var clip = stderr.Trim();
+            const int max = 4000;
+            if (clip.Length > max)
+            {
+                clip = string.Concat(clip.AsSpan(0, max), "…");
+            }
+
+            sb.Append(" Stderr: ").Append(clip);
+        }
+
+        return sb.ToString();
+    }
+
+    private async Task PersistFailureAsync(Guid jobId, string? failureMessage, CancellationToken cancellationToken)
     {
         await using var trx = await dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -317,7 +356,7 @@ public sealed class ImportDatasetAnalysisPipeline(
                 return;
             }
 
-            tracked.MarkFailed();
+            tracked.MarkFailed(failureMessage);
             await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
             await trx.CommitAsync(cancellationToken).ConfigureAwait(false);
         }

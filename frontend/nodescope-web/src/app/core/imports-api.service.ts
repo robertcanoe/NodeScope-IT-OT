@@ -26,4 +26,11 @@ export class ImportsApiService {
   summary(importId: string): Observable<ImportJobSummary> {
     return this.http.get<ImportJobSummary>(`${this.base}/api/imports/${importId}/summary`);
   }
+
+  getArtifactBlob(importId: string, kind: 'report' | 'normalized' | 'issues'): Observable<Blob> {
+    const segment =
+      kind === 'report' ? 'artifacts/report' : kind === 'normalized' ? 'artifacts/normalized-json' : 'artifacts/issues-csv';
+
+    return this.http.get(`${this.base}/api/imports/${importId}/${segment}`, { responseType: 'blob' });
+  }
 }

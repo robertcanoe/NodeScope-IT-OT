@@ -36,7 +36,8 @@ public sealed class ListImportsForProjectQueryHandler(INodeScopeDbContext dbCont
                     j.IssueCount,
                     null,
                     null,
-                    j.CompletedAt))
+                    j.CompletedAt,
+                    j.FailureMessage))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }

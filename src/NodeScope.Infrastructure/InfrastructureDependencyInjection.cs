@@ -24,6 +24,7 @@ public static class InfrastructureDependencyInjection
 
         services.AddSingleton<IUserPasswordHasher, AspNetCompatibleUserPasswordHasher>();
         services.AddSingleton<IImportFileStorage, LocalImportFileStorage>();
+        services.AddScoped<IImportArtifactPathResolver, ImportArtifactPathResolver>();
         services.AddScoped<IImportAnalysisPipeline, ImportDatasetAnalysisPipeline>();
         services.AddHostedService<PendingImportOrchestrationHostedService>();
         return services;

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NodeScope.Infrastructure.Processing;
 
@@ -19,7 +20,8 @@ internal sealed record PythonJobResultEnvelope(
     PythonJobMetricsEnvelope? Metrics,
     IReadOnlyList<PythonColumnStatsEnvelope>? Columns,
     IReadOnlyList<IReadOnlyDictionary<string, JsonElement>>? RecordsSample,
-    IReadOnlyList<PythonIssueEnvelope>? Issues);
+    IReadOnlyList<PythonIssueEnvelope>? Issues,
+    [property: JsonPropertyName("detail")] string? Detail = null);
 
 internal sealed record PythonJobMetricsEnvelope(
     int Duplicates,

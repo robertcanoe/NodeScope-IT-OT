@@ -16,6 +16,7 @@ export interface ImportJobSummary {
   dominantType: string | null;
   dominantNamespace: string | null;
   completedAt: string | null;
+  failureMessage?: string | null;
 }
 
 export interface ImportJobQueued {

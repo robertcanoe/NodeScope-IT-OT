@@ -6,3 +6,7 @@ __pycache__/
 **/bin/
 **/obj/
 frontend/nodescope-web/dist/
+data-prueba/
+.env
+.env.*.local
+*.user

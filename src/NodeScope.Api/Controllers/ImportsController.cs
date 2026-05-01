@@ -2,8 +2,10 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NodeScope.Api.Extensions;
+using NodeScope.Application.Abstractions.Files;
 using NodeScope.Application.Contracts.Imports;
 using NodeScope.Application.Features.Imports.Commands.CreateImport;
+using NodeScope.Application.Features.Imports.Queries.DownloadImportArtifact;
 using NodeScope.Application.Features.Imports.Queries.GetImportSummary;
 using NodeScope.Application.Features.Imports.Queries.ListImports;
 using NodeScope.Application.Features.Projects.Queries.GetProject;
@@ -100,5 +102,43 @@ public sealed class ImportInspectionController(ISender mediator) : ControllerBas
         var ownerId = User.GetRequiredUserId();
         var summary = await mediator.Send(new GetImportSummaryQuery(ownerId, importId), cancellationToken).ConfigureAwait(false);
         return summary is null ? NotFound() : Ok(summary);
+    }
+
+    /// <summary>Streams the HTML report produced for a completed import.</summary>
+    [HttpGet("{importId:guid}/artifacts/report")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetReportArtifactAsync(
+        [FromRoute] Guid importId,
+        CancellationToken cancellationToken)
+    {
+        return await StreamArtifactAsync(importId, ImportArtifactKind.ReportHtml, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Streams normalized JSON rows produced for a completed import.</summary>
+    [HttpGet("{importId:guid}/artifacts/normalized-json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<IActionResult> GetNormalizedJsonArtifactAsync(
+        [FromRoute] Guid importId,
+        CancellationToken cancellationToken) =>
+        StreamArtifactAsync(importId, ImportArtifactKind.NormalizedJson, cancellationToken);
+
+    /// <summary>Streams issues.csv produced for a completed import.</summary>
+    [HttpGet("{importId:guid}/artifacts/issues-csv")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public Task<IActionResult> GetIssuesCsvArtifactAsync(
+        [FromRoute] Guid importId,
+        CancellationToken cancellationToken) =>
+        StreamArtifactAsync(importId, ImportArtifactKind.IssuesCsv, cancellationToken);
+
+    private async Task<IActionResult> StreamArtifactAsync(Guid importId, ImportArtifactKind kind, CancellationToken cancellationToken)
+    {
+        var ownerId = User.GetRequiredUserId();
+        var resolved =
+            await mediator.Send(new ImportArtifactDownloadQuery(ownerId, importId, kind), cancellationToken).ConfigureAwait(false);
+
+        return resolved is null ? NotFound() : PhysicalFile(resolved.AbsolutePhysicalPath, resolved.ContentType, resolved.DownloadFileName);
     }
 }

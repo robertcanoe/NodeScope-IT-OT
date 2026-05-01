@@ -35,6 +35,7 @@ public sealed class GetImportSummaryQueryHandler(INodeScopeDbContext dbContext)
                     imp.IssueCount,
                     imp.CompletedAt,
                     imp.SummaryJson,
+                    imp.FailureMessage,
                 })
             .SingleOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -61,7 +62,8 @@ public sealed class GetImportSummaryQueryHandler(INodeScopeDbContext dbContext)
             row.IssueCount,
             dominantType,
             dominantNamespace,
-            row.CompletedAt);
+            row.CompletedAt,
+            row.FailureMessage);
     }
 
     private static void TryParseSummary(string json, ref string? dominantType, ref string? dominantNamespace)

@@ -63,6 +63,10 @@ public sealed class ImportJobConfiguration : IEntityTypeConfiguration<ImportJob>
         builder.Property(x => x.SummaryJson)
             .HasColumnName("summary_json");
 
+        builder.Property(x => x.FailureMessage)
+            .HasColumnName("failure_message")
+            .HasMaxLength(16384);
+
         builder.HasMany(x => x.DatasetColumns)
             .WithOne(x => x.ImportJob)
             .HasForeignKey(x => x.ImportJobId)

@@ -14,6 +14,7 @@ namespace NodeScope.Application.Contracts.Imports;
 /// <param name="DominantType">Dominant heuristic datatype surfaced from Python summaries.</param>
 /// <param name="DominantNamespace">Dominant namespace fragment when OPC UA heuristic applies.</param>
 /// <param name="CompletedAt">Completion instant when finalized.</param>
+/// <param name="FailureMessage">Operator-facing diagnostics when ingestion failed.</param>
 public sealed record ImportJobSummaryDto(
     Guid Id,
     Guid ProjectId,
@@ -23,4 +24,5 @@ public sealed record ImportJobSummaryDto(
     int? IssueCount,
     string? DominantType,
     string? DominantNamespace,
-    DateTimeOffset? CompletedAt);
+    DateTimeOffset? CompletedAt,
+    string? FailureMessage);
