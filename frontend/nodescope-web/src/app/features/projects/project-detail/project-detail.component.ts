@@ -159,7 +159,15 @@ import { ImportJobStatus, type CompareImportsResponse, type ImportJobSummary } f
                       <a mat-stroked-button [routerLink]="['/projects', ws.id, 'imports', row.id, 'records']">Rows</a>
                     }
                     @if (row.status === ImportJobStatus.Completed) {
-                      <button type="button" mat-stroked-button (click)="openReport(row.id)">Report</button>
+                      <button
+                        type="button"
+                        mat-stroked-button
+                        matTooltip="Informe HTML: KPIs, gráficas Chart.js, tabla filtrable y export CSV (mismo motor que generarInformeNodos)."
+                        matTooltipShowDelay="300"
+                        (click)="openReport(row.id)"
+                      >
+                        Informe nodos
+                      </button>
                       <button type="button" mat-stroked-button (click)="downloadNormalized(row.id)">JSON</button>
                       <button type="button" mat-stroked-button (click)="downloadIssues(row.id)">Issues CSV</button>
                     }

@@ -13,6 +13,8 @@ from typing import Any
 
 import pandas as pd
 
+from opc_report import render_minimal_fallback_report, write_interactive_nodes_report
+
 _LOG = logging.getLogger("nodescope.processor")
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 
@@ -186,59 +188,19 @@ def _analyze(frame: pd.DataFrame) -> dict[str, Any]:
     }
 
 
-def _write_report(output_dir: Path, diagnostics: dict[str, Any]) -> Path:
+def _write_report(output_dir: Path, diagnostics: dict[str, Any], source_basename: str) -> Path:
+    """Persist ``report.html`` (interactive OPC-style dashboard when data is present)."""
     path = output_dir / "report.html"
     dataframe: pd.DataFrame = diagnostics["normalized"]
-    table_html = dataframe.head(200).to_html(classes="grid", border=0, index=False)
 
-    snippets = "".join(f"<li><code>{issue['code']}</code>: {issue['message']}</li>" for issue in diagnostics["issues"])
+    if dataframe is None or len(dataframe) == 0:
+        return render_minimal_fallback_report(diagnostics, path)
 
-    path.write_text(
-        f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>NodeScope report</title>
-  <style>
-    body {{
-      margin: 0;
-      padding: 24px;
-      font-family: Roboto, "Segoe UI", sans-serif;
-      background: #f4f7fb;
-      color: #0f172a;
-    }}
-    .card {{
-      background: white;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 15px 30px rgb(15 23 42 / 0.05);
-      margin-bottom: 20px;
-    }}
-    ul {{ padding-left: 20px; }}
-    table.grid {{ border-collapse: collapse; width: 100%; font-size: 13px; }}
-    table.grid th, table.grid td {{ border-bottom: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <h1>Technical dataset ingest</h1>
-    <p>Rows analysed: <strong>{diagnostics['totalRows']}</strong> —
-       Columns recognised: <strong>{diagnostics['totalColumns']}</strong></p>
-    <p>Dominant dtype family: <code>{diagnostics["metrics"]["dominantType"]}</code></p>
-  </div>
-  <div class="card">
-    <h2>Structured findings</h2>
-    <ul>{snippets or "<li>No structural warnings detected.</li>"}</ul>
-  </div>
-  <div class="card">
-    <h2>Normalized preview</h2>
-    {table_html}
-  </div>
-</body>
-</html>""",
-        encoding="utf-8",
-    )
-    return path
+    try:
+        return write_interactive_nodes_report(dataframe, path, source_basename)
+    except Exception:
+        _LOG.exception("Interactive HTML report failed; falling back to minimal report.")
+        return render_minimal_fallback_report(diagnostics, path)
 
 
 def run_job(request_path: Path) -> Path:
@@ -250,7 +212,7 @@ def run_job(request_path: Path) -> Path:
 
     frame = _read_frame(intake_path, request.get("profile", "opcua-default"))
     diagnostics = _analyze(frame)
-    report_physical = _write_report(artifact_dir, diagnostics)
+    report_physical = _write_report(artifact_dir, diagnostics, intake_path.name)
     dataframe = diagnostics.pop("normalized")
 
     dataframe.to_json(
