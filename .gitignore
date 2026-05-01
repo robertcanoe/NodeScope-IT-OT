@@ -3,3 +3,6 @@ nodescope.dev.db-*
 storage/
 python/.venv/
 __pycache__/
+**/bin/
+**/obj/
+frontend/nodescope-web/dist/
