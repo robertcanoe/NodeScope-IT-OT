@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, Inject, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -21,6 +22,7 @@ import { ProjectSourceType, type ProjectResponse } from '../../shared/models/pro
     RouterLink,
     ReactiveFormsModule,
     MatCardModule,
+    MatDialogModule,
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
@@ -98,6 +100,16 @@ import { ProjectSourceType, type ProjectResponse } from '../../shared/models/pro
             <ng-container matColumnDef="updated">
               <th mat-header-cell *matHeaderCellDef>Updated</th>
               <td mat-cell *matCellDef="let row">{{ row.updatedAt | date: 'short' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let row">
+                <div class="row-actions">
+                  <button type="button" mat-stroked-button (click)="editProject(row)">Edit</button>
+                  <button type="button" mat-stroked-button color="warn" (click)="deleteProject(row)">Delete</button>
+                </div>
+              </td>
             </ng-container>
 
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -184,11 +196,18 @@ import { ProjectSourceType, type ProjectResponse } from '../../shared/models/pro
     .project-table {
       width: 100%;
     }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
   `,
 })
 export class ProjectsPageComponent implements OnInit {
   private readonly projectsApi = inject(ProjectsApiService);
   private readonly fb = inject(FormBuilder);
+  private readonly dialog = inject(MatDialog);
 
   protected readonly SourceType = ProjectSourceType;
   protected readonly projects = signal<ProjectResponse[]>([]);
@@ -196,7 +215,7 @@ export class ProjectsPageComponent implements OnInit {
   protected readonly error = signal<string | null>(null);
   protected readonly showComposer = signal(false);
 
-  protected readonly displayedColumns = ['name', 'source', 'updated'] as const;
+  protected readonly displayedColumns = ['name', 'source', 'updated', 'actions'] as const;
 
   protected readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -261,6 +280,72 @@ export class ProjectsPageComponent implements OnInit {
     }
   }
 
+  protected editProject(project: ProjectResponse): void {
+    const ref = this.dialog.open(ProjectEditDialogComponent, {
+      width: '560px',
+      maxWidth: '95vw',
+      data: project,
+    });
+
+    ref.afterClosed().subscribe((payload: { name: string; description: string | null } | undefined) => {
+      if (!payload) {
+        return;
+      }
+
+      this.projectsApi
+        .update(project.id, {
+          name: payload.name,
+          description: payload.description,
+          sourceType: project.sourceType,
+        })
+        .pipe(
+          catchError(() => {
+            this.error.set('Could not update project. Check API logs for details.');
+            return of(null);
+          }),
+        )
+        .subscribe((updated) => {
+          if (!updated) {
+            return;
+          }
+
+          this.error.set(null);
+          this.projects.update((items) => items.map((p) => (p.id === updated.id ? updated : p)));
+        });
+    });
+  }
+
+  protected deleteProject(project: ProjectResponse): void {
+    const ref = this.dialog.open(ProjectDeleteDialogComponent, {
+      width: '440px',
+      maxWidth: '95vw',
+      data: project,
+    });
+
+    ref.afterClosed().subscribe((accepted: boolean | undefined) => {
+      if (!accepted) {
+        return;
+      }
+
+      this.projectsApi
+        .delete(project.id)
+        .pipe(
+          catchError(() => {
+            this.error.set('Could not delete project.');
+            return of(null);
+          }),
+        )
+        .subscribe((result) => {
+          if (result === null) {
+            return;
+          }
+
+          this.error.set(null);
+          this.projects.update((items) => items.filter((p) => p.id !== project.id));
+        });
+    });
+  }
+
   private refresh(): void {
     this.loading.set(true);
     this.projectsApi
@@ -278,4 +363,96 @@ export class ProjectsPageComponent implements OnInit {
         }
       });
   }
+}
+
+@Component({
+  standalone: true,
+  selector: 'app-project-edit-dialog',
+  imports: [CommonModule, ReactiveFormsModule, MatDialogModule, MatFormFieldModule, MatInputModule, MatButtonModule],
+  template: `
+    <h2 mat-dialog-title>Edit project</h2>
+    <mat-dialog-content>
+      <form [formGroup]="form" class="dialog-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Description</mat-label>
+          <textarea matInput rows="4" formControlName="description"></textarea>
+        </mat-form-field>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" (click)="dialogRef.close()">Cancel</button>
+      <button mat-flat-button color="primary" type="button" [disabled]="form.invalid" (click)="save()">Save</button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    .dialog-form {
+      display: grid;
+      gap: 12px;
+      padding-top: 6px;
+    }
+    mat-form-field {
+      width: 100%;
+    }
+  `,
+})
+export class ProjectEditDialogComponent {
+  private readonly fb = inject(FormBuilder);
+  protected readonly form;
+
+  constructor(
+    readonly dialogRef: MatDialogRef<ProjectEditDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) protected readonly data: ProjectResponse,
+  ) {
+    this.form = this.fb.nonNullable.group({
+      name: [data.name, Validators.required],
+      description: [data.description ?? ''],
+    });
+  }
+
+  protected save(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const raw = this.form.getRawValue();
+    this.dialogRef.close({
+      name: raw.name.trim(),
+      description: raw.description.trim() || null,
+    });
+  }
+}
+
+@Component({
+  standalone: true,
+  selector: 'app-project-delete-dialog',
+  imports: [CommonModule, MatDialogModule, MatButtonModule],
+  template: `
+    <h2 mat-dialog-title>Delete project</h2>
+    <mat-dialog-content>
+      <p>
+        Delete <strong>{{ data.name }}</strong>?
+      </p>
+      <p class="muted">This removes imports, issues, and generated artifacts for this workspace.</p>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button type="button" (click)="dialogRef.close(false)">Cancel</button>
+      <button mat-flat-button color="warn" type="button" (click)="dialogRef.close(true)">Delete</button>
+    </mat-dialog-actions>
+  `,
+  styles: `
+    .muted {
+      color: rgb(15 26 29 / 0.6);
+    }
+  `,
+})
+export class ProjectDeleteDialogComponent {
+  constructor(
+    readonly dialogRef: MatDialogRef<ProjectDeleteDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) protected readonly data: ProjectResponse,
+  ) {}
 }
