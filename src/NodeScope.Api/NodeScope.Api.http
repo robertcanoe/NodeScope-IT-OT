@@ -1,0 +1,6 @@
+@NodeScope.Api_HostAddress = http://localhost:5003
+
+GET {{NodeScope.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

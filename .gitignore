@@ -1,0 +1,5 @@
+nodescope.dev.db
+nodescope.dev.db-*
+storage/
+python/.venv/
+__pycache__/

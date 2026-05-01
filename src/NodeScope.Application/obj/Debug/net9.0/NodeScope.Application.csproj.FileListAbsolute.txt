@@ -1,0 +1,16 @@
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/bin/Debug/net9.0/NodeScope.Application.deps.json
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/bin/Debug/net9.0/NodeScope.Application.dll
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/bin/Debug/net9.0/NodeScope.Application.pdb
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/bin/Debug/net9.0/NodeScope.Domain.dll
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/bin/Debug/net9.0/NodeScope.Domain.pdb
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.csproj.AssemblyReference.cache
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.GeneratedMSBuildEditorConfig.editorconfig
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.AssemblyInfoInputs.cache
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.AssemblyInfo.cs
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.csproj.CoreCompileInputs.cache
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.sourcelink.json
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScop.F304AEEE.Up2Date
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.dll
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/refint/NodeScope.Application.dll
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/NodeScope.Application.pdb
+/home/robertcano/dev/NodeScope-IT-OT/src/NodeScope.Application/obj/Debug/net9.0/ref/NodeScope.Application.dll

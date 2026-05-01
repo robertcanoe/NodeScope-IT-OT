@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nodescope
+      POSTGRES_USER: nodescope
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - '5432:5432'
+    volumes:
+      - nodescope_pg:/var/lib/postgresql/data
+
+volumes:
+  nodescope_pg:

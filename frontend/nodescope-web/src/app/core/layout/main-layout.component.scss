@@ -1,0 +1,39 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.layout-shell {
+  height: 100%;
+}
+
+.layout-sidenav {
+  width: 240px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.sidenav-branding {
+  margin-bottom: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.layout-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.layout-main {
+  flex: 1 1 auto;
+  padding: 24px;
+  background-color: rgba(247, 250, 255, 1);
+}
+
+.is-active {
+  font-weight: 600;
+}

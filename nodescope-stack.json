@@ -1,0 +1,120 @@
+{
+  "project": {
+    "name": "NodeScope IT/OT",
+    "purpose": "Plataforma web para analizar, validar, visualizar y explotar datasets tecnicos IT/OT (Excel, CSV, JSON, OPC UA).",
+    "architecture": {
+      "style": "modular-monolith",
+      "backend_role": "Backend principal en C#/.NET para API, auth, orquestacion y persistencia.",
+      "python_role": "Motor especializado para procesamiento de datos y generacion de reportes HTML.",
+      "frontend_role": "SPA operativa para dashboard, tabla, filtros, incidencias, comparativas e historial."
+    }
+  },
+  "packageManagement": {
+    "frontend": {
+      "requiredManager": "pnpm",
+      "scaffoldWith": "pnpx",
+      "policy": "Obligatorio usar pnpm/pnpx para todo el entorno frontend."
+    }
+  },
+  "stack": {
+    "backend": {
+      "runtime": ".NET 9",
+      "framework": "ASP.NET Core Web API",
+      "projects": [
+        "NodeScope.Api",
+        "NodeScope.Application",
+        "NodeScope.Domain",
+        "NodeScope.Infrastructure",
+        "NodeScope.Worker",
+        "NodeScope.AppHost",
+        "NodeScope.ServiceDefaults"
+      ],
+      "data": "PostgreSQL",
+      "realtime": "SignalR",
+      "observability": [
+        "OpenTelemetry",
+        ".NET Aspire"
+      ],
+      "documentation": "Swagger/OpenAPI",
+      "auth": "JWT Bearer"
+    },
+    "frontend": {
+      "framework": "Angular",
+      "language": "TypeScript",
+      "style": "SCSS",
+      "architecture": "Standalone components + Routing + Lazy loading por dominios",
+      "core_tech": [
+        "Angular Router",
+        "HttpClient",
+        "RxJS",
+        "Signals (estado local)"
+      ],
+      "optional_tech": [
+        "Angular Material/CDK",
+        "NgRx (si crece estado global)",
+        "Chart.js o ECharts"
+      ]
+    },
+    "pythonEngine": {
+      "location": "python/",
+      "venv": ".venv",
+      "libraries": [
+        "pandas",
+        "openpyxl",
+        "jinja2"
+      ],
+      "responsibilities": [
+        "Lectura de Excel/CSV/JSON",
+        "Normalizacion de columnas",
+        "Calculo de metricas",
+        "Deteccion de incidencias",
+        "Generacion de JSON canonico",
+        "Generacion de reporte HTML interactivo",
+        "Generacion de CSVs derivados"
+      ],
+      "integrationContract": {
+        "invocation": "Proceso controlado desde API/Worker .NET",
+        "input": [
+          "importId",
+          "projectId",
+          "inputPath",
+          "outputDir",
+          "profile"
+        ],
+        "output": [
+          "success",
+          "totalRows",
+          "totalColumns",
+          "reportHtmlPath",
+          "normalizedJsonPath",
+          "issuesCsvPath",
+          "metrics"
+        ]
+      }
+    }
+  },
+  "folderConventions": {
+    "root": [
+      "src",
+      "frontend",
+      "python",
+      "storage/uploads",
+      "storage/artifacts",
+      "storage/temp"
+    ]
+  },
+  "aiRules": {
+    "nonNegotiable": [
+      "Mantener C#/.NET como backend principal.",
+      "Usar Python solo como motor de analisis/reporting, no como backend principal.",
+      "Mantener arquitectura modular por capas: Api, Application, Domain, Infrastructure, Worker.",
+      "Respetar contratos JSON claros entre .NET y Python.",
+      "Mantener frontend en Angular con package manager obligatorio pnpm."
+    ],
+    "developmentGuidelines": [
+      "Priorizar validaciones de datos tecnicos (NodeId duplicado, vacios, tipos, namespaces).",
+      "Asegurar trazabilidad de importaciones, artefactos y auditoria.",
+      "Conservar enfoque IT/OT orientado a productividad y operacion tecnica."
+    ]
+  }
+}
