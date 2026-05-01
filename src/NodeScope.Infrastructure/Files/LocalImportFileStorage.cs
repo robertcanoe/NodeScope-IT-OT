@@ -73,6 +73,32 @@ public sealed class LocalImportFileStorage(IHostEnvironment environment, IOption
 
     /// <inheritdoc />
     public string GetArtifactsRootPhysicalPath(Guid projectId, Guid importJobId) => GetArtifactsPhysicalPath(projectId, importJobId);
+
+    /// <inheritdoc />
+    public Task ClearArtifactsDirectoryAsync(Guid projectId, Guid importJobId, CancellationToken cancellationToken)
+    {
+        var root = GetArtifactsPhysicalPath(projectId, importJobId);
+        if (!Directory.Exists(root))
+        {
+            return Task.CompletedTask;
+        }
+
+        foreach (var entry in Directory.EnumerateFileSystemEntries(root))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (File.Exists(entry))
+            {
+                File.Delete(entry);
+            }
+            else if (Directory.Exists(entry))
+            {
+                Directory.Delete(entry, recursive: true);
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private string GetUploadDirectory(Guid projectId, Guid importJobId) =>
         Path.Combine(ResolvePhysicalRoot(), "uploads", projectId.ToString("D"), importJobId.ToString("D"));
 }
