@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using NodeScope.Domain.Entities;
 
 namespace NodeScope.Application.Abstractions.Data;
@@ -47,6 +48,11 @@ public interface INodeScopeDbContext
     /// Gets forensic audit tuples.
     /// </summary>
     DbSet<AuditLog> AuditLogs { get; }
+
+    /// <summary>
+    /// Allows transactional semantics for multi-step ingestion lifecycle updates.
+    /// </summary>
+    DatabaseFacade Database { get; }
 
     /// <summary>
     /// Persists pending domain changes asynchronously.
