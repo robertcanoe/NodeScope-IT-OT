@@ -8,15 +8,72 @@
 }
 
 .layout-sidenav {
-  width: 240px;
-  padding: 16px;
-  box-sizing: border-box;
+  width: 260px;
+  padding: 0;
+  border-right: 1px solid rgb(255 255 255 / 0.08);
+  background: linear-gradient(170deg, #003240 0%, #004254 52%, #003d4f 100%);
+  color: #f0fafc;
 }
 
 .sidenav-branding {
-  margin-bottom: 12px;
+  padding: 28px 24px 22px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+}
+
+.brand-mark {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.brand-tag {
+  margin-top: 6px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(176 226 239 / 0.85);
+}
+
+.sidenav-nav {
+  padding-top: 8px;
+
+  a {
+    color: inherit;
+    border-radius: 0 999px 999px 0;
+    margin-right: 12px;
+  }
+
+  .mdc-list-item__primary-text {
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+}
+
+.is-active {
+  background: rgb(255 255 255 / 0.12) !important;
+  border-left: 3px solid #8fd4ea;
+
+  .mdc-list-item__primary-text {
+    font-weight: 700 !important;
+    color: #ffffff !important;
+  }
+}
+
+:host ::ng-deep .layout-sidenav {
+  --mat-list-list-item-label-text-color: rgb(231 246 251 / 0.95);
+  --mat-list-list-item-hover-label-text-color: #ffffff;
+  --mat-list-list-item-focus-label-text-color: #ffffff;
+
+  .mat-mdc-list-item:not(.is-active) .mdc-list-item__primary-text {
+    color: rgb(231 246 251 / 0.95);
+  }
+
+  .mat-mdc-list-item:not(.is-active):hover .mdc-list-item__primary-text {
+    color: #ffffff;
+  }
 }
 
 .layout-content {
@@ -24,16 +81,34 @@
   flex-direction: column;
 }
 
+.toolbar {
+  padding: 0 20px 0 8px;
+  min-height: 56px;
+  box-shadow: 0 1px 0 rgb(0 0 0 / 0.08);
+}
+
+.toolbar-title {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  font-size: 0.8125rem;
+  text-transform: uppercase;
+  opacity: 0.92;
+}
+
 .toolbar-spacer {
   flex: 1 1 auto;
 }
 
-.layout-main {
-  flex: 1 1 auto;
-  padding: 24px;
-  background-color: rgba(247, 250, 255, 1);
+.toolbar-signout {
+  font-weight: 600;
+  color: #ffffff !important;
 }
 
-.is-active {
-  font-weight: 600;
+.layout-main {
+  flex: 1 1 auto;
+  padding: 28px 32px 40px;
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+  background: transparent;
 }

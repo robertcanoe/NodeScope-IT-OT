@@ -119,15 +119,32 @@ import { ProjectSourceType, type ProjectResponse } from '../../shared/models/pro
       gap: 16px;
       flex-wrap: wrap;
       align-items: center;
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.625rem, 2.5vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #08252c;
+      }
     }
 
     .muted {
-      color: rgba(15, 23, 42, 0.64);
+      color: rgb(15 26 29 / 0.58);
       margin: 0;
     }
 
     .composer {
-      padding: 20px 24px;
+      padding: 22px 26px !important;
+      border-radius: 14px !important;
+      border-left: 4px solid rgb(0 66 84 / 0.35);
+      box-shadow: 0 2px 20px rgb(0 54 71 / 0.07) !important;
+    }
+
+    .composer h2 {
+      margin: 0 0 14px;
+      font-size: 1.0625rem;
+      font-weight: 700;
     }
 
     .composer-grid {
@@ -156,10 +173,13 @@ import { ProjectSourceType, type ProjectResponse } from '../../shared/models/pro
       padding: 20px;
     }
 
-    mat-card {
-      padding: 0;
-      overflow: hidden;
-    }
+      mat-card {
+        padding: 0;
+        overflow: hidden;
+        border-radius: 14px !important;
+        border: 1px solid rgb(0 66 84 / 0.1) !important;
+        box-shadow: 0 2px 20px rgb(0 54 71 / 0.06) !important;
+      }
 
     .project-table {
       width: 100%;

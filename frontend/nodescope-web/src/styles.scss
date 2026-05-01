@@ -1,4 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 @import '@angular/material/prebuilt-themes/azure-blue.css';
+
+/* NodeScope brand — primary #004254 (override Material 3 system tokens) */
+html {
+  --ns-brand: #004254;
+  --ns-brand-deep: #002f3d;
+  --ns-brand-soft: #e3f1f5;
+  --ns-canvas: #eef5f8;
+  --ns-accent: #0a7a94;
+
+  --mat-sys-primary: #004254;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-primary-container: #c5e4ee;
+  --mat-sys-on-primary-container: #001f28;
+  --mat-sys-inverse-primary: #8dd0e8;
+  --mat-sys-primary-fixed: #c5e4ee;
+  --mat-sys-primary-fixed-dim: #8fc8dc;
+  --mat-sys-on-primary-fixed: #001f28;
+  --mat-sys-on-primary-fixed-variant: #003541;
+  --mat-sys-surface-tint: #004254;
+
+  --mat-sys-secondary: #52666d;
+  --mat-sys-on-secondary: #ffffff;
+  --mat-sys-secondary-container: #d5e8ee;
+  --mat-sys-on-secondary-container: #0c2128;
+
+  --mat-sys-tertiary: #0a8aa8;
+  --mat-sys-on-tertiary: #ffffff;
+  --mat-sys-tertiary-container: #b8eaf7;
+  --mat-sys-on-tertiary-container: #003541;
+
+  --mat-sys-background: #f4f9fb;
+  --mat-sys-on-background: #0f1a1d;
+  --mat-sys-surface: #fdfefe;
+  --mat-sys-on-surface: #0f1a1d;
+  --mat-sys-surface-variant: #dee8ec;
+  --mat-sys-on-surface-variant: #3d4c52;
+  --mat-sys-surface-container-lowest: #ffffff;
+  --mat-sys-surface-container-low: #f2f9fb;
+  --mat-sys-surface-container: #ecf4f7;
+  --mat-sys-surface-container-high: #e6eef1;
+  --mat-sys-surface-container-highest: #dfe8eb;
+  --mat-sys-inverse-surface: #1f2c31;
+  --mat-sys-inverse-on-surface: #e8f2f6;
+  --mat-sys-outline: #6f7f86;
+  --mat-sys-outline-variant: #bdc8cd;
+
+  --jp: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+
+  --mat-sys-body-large: 400 1rem / 1.5rem var(--jp);
+  --mat-sys-body-large-font: var(--jp);
+  --mat-sys-body-medium: 400 0.875rem / 1.25rem var(--jp);
+  --mat-sys-body-medium-font: var(--jp);
+  --mat-sys-body-small: 400 0.75rem / 1rem var(--jp);
+  --mat-sys-body-small-font: var(--jp);
+  --mat-sys-display-large-font: var(--jp);
+  --mat-sys-display-medium-font: var(--jp);
+  --mat-sys-display-small-font: var(--jp);
+  --mat-sys-headline-large-font: var(--jp);
+  --mat-sys-headline-medium-font: var(--jp);
+  --mat-sys-headline-small-font: var(--jp);
+  --mat-sys-label-large-font: var(--jp);
+  --mat-sys-label-medium-font: var(--jp);
+  --mat-sys-label-small-font: var(--jp);
+  --mat-sys-title-large-font: var(--jp);
+  --mat-sys-title-medium-font: var(--jp);
+  --mat-sys-title-small-font: var(--jp);
+
+  --mat-sys-display-large: 400 3.562rem / 4rem var(--jp);
+  --mat-sys-display-medium: 400 2.812rem / 3.25rem var(--jp);
+  --mat-sys-display-small: 400 2.25rem / 2.75rem var(--jp);
+  --mat-sys-headline-large: 400 2rem / 2.5rem var(--jp);
+  --mat-sys-headline-medium: 400 1.75rem / 2.25rem var(--jp);
+  --mat-sys-headline-small: 400 1.5rem / 2rem var(--jp);
+  --mat-sys-title-large: 500 1.375rem / 1.75rem var(--jp);
+  --mat-sys-title-medium: 500 1rem / 1.5rem var(--jp);
+  --mat-sys-title-small: 500 0.875rem / 1.25rem var(--jp);
+  --mat-sys-label-large: 500 0.875rem / 1.25rem var(--jp);
+  --mat-sys-label-medium: 500 0.75rem / 1rem var(--jp);
+  --mat-sys-label-small: 500 0.688rem / 1rem var(--jp);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
 html,
 body {
@@ -7,6 +94,32 @@ body {
 
 body {
   margin: 0;
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background-color: #f8fafc;
+  font-family: var(--jp);
+  font-size: 15px;
+  color: var(--mat-sys-on-background);
+  background-color: var(--ns-canvas);
+  background-image:
+    radial-gradient(ellipse 140% 80% at 0% -30%, rgb(0 66 84 / 0.11), transparent 55%),
+    radial-gradient(ellipse 100% 60% at 100% 0%, rgb(10 138 168 / 0.06), transparent 50%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Primary flat buttons legibility */
+.mat-mdc-raised-button.mat-primary,
+.mat-mdc-unelevated-button.mat-primary,
+.mat-mdc-filled-button.mat-primary {
+  letter-spacing: 0.02em;
+}
+
+.mat-mdc-outlined-button.mat-primary {
+  border-color: color-mix(in srgb, var(--ns-brand) 45%, transparent);
+}
+
+a:not(.mat-mdc-button-base):not(.mdc-list-item):not(mat-list-item *) {
+  color: var(--ns-accent);
+}
+
+a:not(.mat-mdc-button-base):not(.mdc-list-item):not(mat-list-item *):hover {
+  color: var(--ns-brand);
 }

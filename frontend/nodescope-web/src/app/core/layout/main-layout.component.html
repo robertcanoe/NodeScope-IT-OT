@@ -1,8 +1,11 @@
 <mat-sidenav-container class="layout-shell">
   <mat-sidenav class="layout-sidenav" mode="side" opened>
-    <div class="sidenav-branding">NodeScope</div>
+    <div class="sidenav-branding">
+      <div class="brand-mark">NodeScope</div>
+      <div class="brand-tag">IT · OT ingestion</div>
+    </div>
 
-    <mat-nav-list role="navigation" aria-label="Primary application sections">
+    <mat-nav-list role="navigation" aria-label="Primary application sections" class="sidenav-nav">
       <a mat-list-item routerLink="/dashboard" routerLinkActive="is-active">
         <span matListItemTitle>Dashboard</span>
       </a>
@@ -14,11 +17,11 @@
 
   <mat-sidenav-content class="layout-content">
     <mat-toolbar color="primary" class="toolbar">
-      <span>NodeScope IT/OT</span>
+      <span class="toolbar-title">Workspace</span>
 
       <span class="toolbar-spacer"></span>
 
-      <button type="button" mat-stroked-button color="accent" (click)="logout()">Sign out</button>
+      <button type="button" mat-button class="toolbar-signout" (click)="logout()">Sign out</button>
     </mat-toolbar>
 
     <main class="layout-main" role="main">

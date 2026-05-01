@@ -282,6 +282,13 @@ import { ImportJobStatus, type CompareImportsResponse, type ImportJobSummary } f
       gap: 16px;
       flex-wrap: wrap;
       align-items: flex-start;
+
+      h1 {
+        margin: 0 0 6px;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+        color: #08252c;
+      }
     }
 
     .eyebrow {
@@ -289,20 +296,20 @@ import { ImportJobStatus, type CompareImportsResponse, type ImportJobSummary } f
       font-size: 13px;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: rgba(15, 23, 42, 0.55);
+      color: rgb(15 37 44 / 0.45);
 
       a {
         color: inherit;
         text-decoration: none;
+      }
 
-        &:hover {
-          color: var(--mat-sys-primary);
-        }
+      a:hover {
+        color: var(--ns-accent);
       }
     }
 
     .muted {
-      color: rgba(15, 23, 42, 0.64);
+      color: rgb(15 26 29 / 0.58);
       margin: 0;
     }
 
@@ -485,6 +492,9 @@ import { ImportJobStatus, type CompareImportsResponse, type ImportJobSummary } f
 
     mat-card.mat-mdc-card {
       overflow: visible;
+      border-radius: 14px !important;
+      border: 1px solid rgb(0 66 84 / 0.1);
+      box-shadow: 0 2px 20px rgb(0 54 71 / 0.06);
     }
   `,
 })
