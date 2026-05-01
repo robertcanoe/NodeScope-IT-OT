@@ -85,6 +85,9 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>("database");
+
 builder.Services.AddScoped<INodeScopeDbContext>(static provider => provider.GetRequiredService<AppDbContext>());
 
 builder.Services.AddNodeScopeInfrastructureServices();
@@ -173,6 +176,7 @@ if (!app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapHealthChecks("/health");
 
 await using (var scope = app.Services.CreateAsyncScope())
 {
