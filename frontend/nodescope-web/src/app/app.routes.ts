@@ -37,6 +37,16 @@ export const routes: Routes = [
             (module) => module.ProjectDetailComponent,
           ),
       },
+      {
+        path: 'projects/:projectId/imports/:importId/issues',
+        loadComponent: () =>
+          import('./features/imports/import-issues-page.component').then((m) => m.ImportIssuesPageComponent),
+      },
+      {
+        path: 'projects/:projectId/imports/:importId/records',
+        loadComponent: () =>
+          import('./features/imports/import-records-page.component').then((m) => m.ImportRecordsPageComponent),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
