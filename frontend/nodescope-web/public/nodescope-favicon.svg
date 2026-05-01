@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="NodeScope">
+  <defs>
+    <linearGradient id="ns-bg" x1="8" y1="10" x2="58" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0a5f78"/>
+      <stop offset="1" stop-color="#003847"/>
+    </linearGradient>
+    <linearGradient id="ns-glow" x1="22" y1="18" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4db8cf" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#004254" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="ns-soft" x="-12%" y="-12%" width="124%" height="124%">
+      <feGaussianBlur stdDeviation="0.8" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Rounded tile -->
+  <rect width="64" height="64" rx="14" fill="url(#ns-bg)"/>
+  <ellipse cx="34" cy="30" rx="22" ry="20" fill="url(#ns-glow)"/>
+  <!-- 2x2 node blocks -->
+  <g filter="url(#ns-soft)">
+    <rect x="16" y="16" width="14" height="14" rx="3.5" fill="#eaf7fb" opacity="0.95"/>
+    <rect x="34" y="16" width="14" height="14" rx="3.5" fill="#b8dae6" opacity="0.92"/>
+    <rect x="16" y="34" width="14" height="14" rx="3.5" fill="#7fb8cc" opacity="0.85"/>
+    <rect x="34" y="34" width="14" height="14" rx="3.5" fill="#5ca3bd" opacity="0.9"/>
+  </g>
+  <!-- Subtle strokes for separation -->
+  <g fill="none" stroke="#001820" stroke-opacity="0.22" stroke-width="1">
+    <rect x="16.5" y="16.5" width="13" height="13" rx="3"/>
+    <rect x="34.5" y="16.5" width="13" height="13" rx="3"/>
+    <rect x="16.5" y="34.5" width="13" height="13" rx="3"/>
+    <rect x="34.5" y="34.5" width="13" height="13" rx="3"/>
+  </g>
+</svg>
