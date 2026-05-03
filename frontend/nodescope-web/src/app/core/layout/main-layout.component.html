@@ -12,6 +12,13 @@
       <a mat-list-item routerLink="/projects" routerLinkActive="is-active">
         <span matListItemTitle>Projects</span>
       </a>
+      <a mat-list-item routerLink="/operations" routerLinkActive="is-active">
+        <span matListItemTitle>Operaciones</span>
+      </a>
+      <mat-divider class="sidenav-divider" />
+      <a mat-list-item routerLink="/account" routerLinkActive="is-active">
+        <span matListItemTitle>Cuenta</span>
+      </a>
     </mat-nav-list>
   </mat-sidenav>
 
@@ -21,7 +28,19 @@
 
       <span class="toolbar-spacer"></span>
 
-      <button type="button" mat-button class="toolbar-signout" (click)="logout()">Sign out</button>
+      <a
+        mat-button
+        class="toolbar-account"
+        routerLink="/account"
+        [attr.title]="currentUser()?.email ?? 'Cuenta y sesión'"
+      >
+        @if (currentUser(); as operator) {
+          {{ operator.displayName }}
+        } @else {
+          Cuenta
+        }
+      </a>
+      <button type="button" mat-button class="toolbar-signout" (click)="logout()">Cerrar sesión</button>
     </mat-toolbar>
 
     <main class="layout-main" role="main">
