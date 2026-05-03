@@ -31,6 +31,18 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'operations',
+        loadComponent: () =>
+          import('./features/operations/operations-hub-page.component').then(
+            (module) => module.OperationsHubPageComponent,
+          ),
+      },
+      {
+        path: 'account',
+        loadComponent: () =>
+          import('./features/account/account-page.component').then((module) => module.AccountPageComponent),
+      },
+      {
         path: 'projects/:projectId/imports/:importId/issues',
         loadComponent: () =>
           import('./features/imports/import-issues-page.component').then((m) => m.ImportIssuesPageComponent),
