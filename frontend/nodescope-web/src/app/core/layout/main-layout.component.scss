@@ -37,6 +37,11 @@
   color: rgb(176 226 239 / 0.85);
 }
 
+.sidenav-divider {
+  margin: 10px 16px 8px 0;
+  border-top-color: rgb(255 255 255 / 0.14);
+}
+
 .sidenav-nav {
   padding-top: 8px;
 
@@ -97,6 +102,16 @@
 
 .toolbar-spacer {
   flex: 1 1 auto;
+}
+
+.toolbar-account {
+  font-weight: 600;
+  color: #ffffff !important;
+  text-decoration: none;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .toolbar-signout {
