@@ -17,8 +17,13 @@ public static class InfrastructureDependencyInjection
     /// Adds NodeScope Infrastructure services to the application's DI container.
     /// </summary>
     /// <param name="services">Host-managed service registrations.</param>
+    /// <param name="includeProcessingHostedService">
+    /// When <see langword="true"/>, registers the background ingestion dispatcher hosted service.
+    /// </param>
     /// <returns>The same registry for fluent composition.</returns>
-    public static IServiceCollection AddNodeScopeInfrastructureServices(this IServiceCollection services)
+    public static IServiceCollection AddNodeScopeInfrastructureServices(
+        this IServiceCollection services,
+        bool includeProcessingHostedService = true)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -26,7 +31,10 @@ public static class InfrastructureDependencyInjection
         services.AddSingleton<IImportFileStorage, LocalImportFileStorage>();
         services.AddScoped<IImportArtifactPathResolver, ImportArtifactPathResolver>();
         services.AddScoped<IImportAnalysisPipeline, ImportDatasetAnalysisPipeline>();
-        services.AddHostedService<PendingImportOrchestrationHostedService>();
+        if (includeProcessingHostedService)
+        {
+            services.AddHostedService<PendingImportOrchestrationHostedService>();
+        }
         return services;
     }
 }
