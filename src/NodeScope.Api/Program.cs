@@ -61,7 +61,10 @@ builder.Services.AddSwaggerGen(swaggerGenOptions =>
     });
 });
 
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
+builder.Services.AddOptions<JwtSettings>()
+    .BindConfiguration(JwtSettings.SectionName)
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 var jwtBootstrap = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
     ?? throw new InvalidOperationException("Missing Jwt configuration section.");
@@ -172,6 +175,7 @@ app.UseCors("AngularSpaClients");
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
+    app.UseHsts();
 }
 app.UseAuthentication();
 app.UseAuthorization();
