@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nodescope
+      POSTGRES_USER: nodescope
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - nodescope_pg:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    user: "0:0"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=nodescope;Username=nodescope;Password=changeme
+      Jwt__Issuer: https://localhost/nodescope
+      Jwt__Audience: nodescope-spa-clients
+      Jwt__SigningKey: dev-signing-key-please-change-32chars+
+      Processing__StorageRoot: /data
+    ports:
+      - "8080:8080"
+    volumes:
+      - nodescope_storage:/data
+    depends_on:
+      - postgres
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    user: "0:0"
+    environment:
+      DOTNET_ENVIRONMENT: Production
+      ConnectionStrings__Database: Host=postgres;Port=5432;Database=nodescope;Username=nodescope;Password=changeme
+      Processing__StorageRoot: /data
+      Processing__ProcessorScriptPath: /opt/nodescope-processor/main.py
+      Processing__PythonExecutable: python3
+    volumes:
+      - nodescope_storage:/data
+    depends_on:
+      - postgres
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/nodescope-web/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "4200:8080"
+
+volumes:
+  nodescope_pg:
+  nodescope_storage:
