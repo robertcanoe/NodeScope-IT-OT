@@ -1,11 +1,14 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTableModule } from '@angular/material/table';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { catchError, finalize, of } from 'rxjs';
+
+import { AuthTokenStorage } from '../../core/auth-token.storage';
 
 import { DashboardApiService } from '../../core/dashboard-api.service';
 import type { DashboardStatistics } from '../../shared/models/dashboard.models';
@@ -201,6 +204,8 @@ import type { DashboardStatistics } from '../../shared/models/dashboard.models';
 })
 export class DashboardPageComponent implements OnInit {
   private readonly dashboardApi = inject(DashboardApiService);
+  private readonly authStorage = inject(AuthTokenStorage);
+  private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
   protected readonly stats = signal<DashboardStatistics | null>(null);
@@ -213,8 +218,15 @@ export class DashboardPageComponent implements OnInit {
     this.dashboardApi
       .statistics()
       .pipe(
-        catchError(() => {
-          this.error.set('Dashboard statistics unavailable. Confirm the NodeScope API and PostgreSQL are running.');
+        catchError((err) => {
+          if (err instanceof HttpErrorResponse && (err.status === 401 || err.status === 403)) {
+            this.authStorage.clear();
+            void this.router.navigateByUrl('/login');
+            return of(null);
+          }
+          this.error.set(
+            'Dashboard statistics unavailable. Confirm the NodeScope API and PostgreSQL are running.',
+          );
           return of(null);
         }),
         finalize(() => this.loading.set(false)),
