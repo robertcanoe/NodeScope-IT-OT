@@ -34,22 +34,36 @@ public sealed class ImportDatasetAnalysisPipeline(
 
         await using (var leaseTransaction = await dbContext.Database.BeginTransactionAsync(cancellationToken).ConfigureAwait(false))
         {
-            var candidate = await dbContext.ImportJobs
-                .Include(j => j.Project)
+            var candidateId = await dbContext.ImportJobs
                 .Where(j => j.Status == ImportJobStatus.Pending)
                 .OrderBy(j => j.Id)
+                .Select(j => j.Id)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            if (candidate is null)
+            if (candidateId == Guid.Empty)
             {
                 await leaseTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
                 return false;
             }
 
-            jobId = candidate.Id;
-            candidate.MarkProcessing();
-            await dbContext.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+            var startedAtUtc = DateTimeOffset.UtcNow;
+            var updated = await dbContext.ImportJobs
+                .Where(j => j.Id == candidateId && j.Status == ImportJobStatus.Pending)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(j => j.Status, ImportJobStatus.Processing)
+                        .SetProperty(j => j.StartedAt, startedAtUtc),
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            if (updated == 0)
+            {
+                await leaseTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                return true;
+            }
+
+            jobId = candidateId;
             await leaseTransaction.CommitAsync(cancellationToken).ConfigureAwait(false);
         }
 
@@ -86,6 +100,16 @@ public sealed class ImportDatasetAnalysisPipeline(
             await PersistPythonRequestPayloadAsync(job, inputFullPath, artifactDir, requestPath).ConfigureAwait(false);
 
             var scriptPhysicalPath = ResolveScriptPhysicalPath(settings);
+            if (!File.Exists(scriptPhysicalPath))
+            {
+                logger.LogError("Python script missing under {PhysicalPath}", scriptPhysicalPath);
+                await PersistFailureAsync(
+                        jobId,
+                        $"Python processor script not found at '{scriptPhysicalPath}'.",
+                        cancellationToken)
+                    .ConfigureAwait(false);
+                return true;
+            }
             using var subprocess = LaunchPythonInterpreter(settings.PythonExecutable.Trim(), scriptPhysicalPath, requestPath);
 
             var stdoutReader = subprocess.StandardOutput.ReadToEndAsync(cancellationToken);
