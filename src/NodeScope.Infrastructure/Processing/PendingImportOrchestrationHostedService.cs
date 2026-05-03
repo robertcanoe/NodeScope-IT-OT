@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using NodeScope.Application.Abstractions.Processing;
+using NodeScope.Application.Configuration;
 
 namespace NodeScope.Infrastructure.Processing;
 
@@ -13,7 +15,10 @@ namespace NodeScope.Infrastructure.Processing;
 /// </remarks>
 /// <param name="scopeFactory">Scoped factory spawning isolated relational contexts per ingestion attempt.</param>
 /// <param name="logger">Structured observability façade.</param>
-public sealed class PendingImportOrchestrationHostedService(IServiceScopeFactory scopeFactory, ILogger<PendingImportOrchestrationHostedService> logger)
+public sealed class PendingImportOrchestrationHostedService(
+    IServiceScopeFactory scopeFactory,
+    IOptionsMonitor<ProcessingOrchestrationSettings> settingsMonitor,
+    ILogger<PendingImportOrchestrationHostedService> logger)
     : BackgroundService
 {
     /// <inheritdoc />
@@ -27,7 +32,9 @@ public sealed class PendingImportOrchestrationHostedService(IServiceScopeFactory
 
                 var pipeline = scope.ServiceProvider.GetRequiredService<IImportAnalysisPipeline>();
                 var processed = await pipeline.TryProcessNextPendingAsync(stoppingToken).ConfigureAwait(false);
-                await Task.Delay(processed ? 100 : 900, stoppingToken).ConfigureAwait(false);
+                var settings = settingsMonitor.CurrentValue;
+                await Task.Delay(processed ? settings.ActiveDelayMilliseconds : settings.IdleDelayMilliseconds, stoppingToken)
+                    .ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -36,7 +43,8 @@ public sealed class PendingImportOrchestrationHostedService(IServiceScopeFactory
             catch (Exception ex)
             {
                 logger.LogError(ex, "Pending import dispatcher loop faulted unexpectedly.");
-                await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(settingsMonitor.CurrentValue.FaultDelaySeconds), stoppingToken)
+                    .ConfigureAwait(false);
             }
         }
     }
