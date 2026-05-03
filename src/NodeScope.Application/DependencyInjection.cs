@@ -24,7 +24,13 @@ public static class DependencyInjection
 
         services.AddOptions<ProcessingSettings>()
             .BindConfiguration(ProcessingSettings.SectionName)
-            .Validate(settings => settings.MaxUploadBytes > 0, $"{ProcessingSettings.SectionName}: MaxUploadBytes must be positive.");
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<ProcessingOrchestrationSettings>()
+            .BindConfiguration(ProcessingOrchestrationSettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         var assembly = Assembly.GetExecutingAssembly();
 
