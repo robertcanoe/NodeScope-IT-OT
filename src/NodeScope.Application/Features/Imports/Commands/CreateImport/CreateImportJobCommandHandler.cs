@@ -33,6 +33,13 @@ public sealed class CreateImportJobCommandHandler(INodeScopeDbContext dbContext,
 
         var importId = Guid.NewGuid();
         var safeName = SanitizeFileName(request.OriginalFileName);
+        if (safeName.Length > 128)
+        {
+            var extension = Path.GetExtension(safeName);
+            var baseName = Path.GetFileNameWithoutExtension(safeName);
+            var trimmedBase = baseName.Length > 100 ? baseName[..100] : baseName;
+            safeName = string.Concat(trimmedBase, extension);
+        }
         var relativePath = fileStorage.BuildStoredRelativePath(project.Id, importId, safeName);
 
         var aggregate = new ImportJob(project.Id, request.OriginalFileName, relativePath, importId);
