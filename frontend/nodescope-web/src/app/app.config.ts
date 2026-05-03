@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, isDevMode, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
 
@@ -13,6 +13,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideHttpClient(withInterceptors([authInterceptor])),
     provideRouter(routes),
-    { provide: API_BASE_URL, useFactory: () => (isDevMode() ? '' : 'http://localhost:5003') },
+    /** Same-origin: dev server proxies `/api`; Docker nginx proxies to the API service. */
+    { provide: API_BASE_URL, useFactory: () => '' },
   ],
 };
