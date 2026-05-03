@@ -16,22 +16,26 @@ public sealed class JwtSettings
     /// <summary>
     /// Gets the logical issuer surfaced inside validated tokens (<c>iss</c>).
     /// </summary>
+    [System.ComponentModel.DataAnnotations.Required]
     public string Issuer { get; init; } = string.Empty;
 
     /// <summary>
     /// Gets the intended audience surfaced inside validated tokens (<c>aud</c>).
     /// </summary>
+    [System.ComponentModel.DataAnnotations.Required]
     public string Audience { get; init; } = string.Empty;
 
     /// <summary>
     /// Gets the symmetric key material used both for issuance and Bearer validation (<c>HMACSHA256</c>).
     /// </summary>
     /// <remarks>Minimum entropy requirements are asserted through <see cref="ValidateSigningKeyEntropy"/>.</remarks>
+    [System.ComponentModel.DataAnnotations.Required]
     public string SigningKey { get; init; } = string.Empty;
 
     /// <summary>
     /// Gets the absolute TTL for access tokens in minutes—short lived per NodeScope threat model assumptions.
     /// </summary>
+    [System.ComponentModel.DataAnnotations.Range(1, 1440)]
     public int AccessTokenLifetimeMinutes { get; init; } = 60;
 
     /// <summary>
