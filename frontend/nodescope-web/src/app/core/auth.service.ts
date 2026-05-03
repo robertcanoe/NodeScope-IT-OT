@@ -32,8 +32,8 @@ export class AuthService {
     this.storage.clear();
   }
 
-  /** Whether an access token presently exists inside session storage primitives. */
+  /** Whether a usable (non-expired) access token exists. */
   isAuthenticated(): boolean {
-    return this.storage.hasSession();
+    return this.storage.hasValidSession();
   }
 }
