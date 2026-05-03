@@ -58,7 +58,7 @@ public sealed class ProjectImportsController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ImportJobQueuedDto>> UploadAsync(
         [FromRoute] Guid projectId,
-        IFormFile file,
+        [FromForm] IFormFile file,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(file);
@@ -66,6 +66,11 @@ public sealed class ProjectImportsController(ISender mediator) : ControllerBase
         if (file.Length == 0)
         {
             return BadRequest("Uploaded payload is empty.");
+        }
+
+        if (string.IsNullOrWhiteSpace(file.ContentType))
+        {
+            return BadRequest("Uploaded payload has an unsupported content type.");
         }
 
         var ownerId = User.GetRequiredUserId();
