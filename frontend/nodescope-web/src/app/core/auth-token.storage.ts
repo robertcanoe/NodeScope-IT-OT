@@ -25,6 +25,9 @@ export class AuthTokenStorage {
 
   readonly currentUser = this.persistedUser.asReadonly();
 
+  /** Server-provided access token expiry (ISO 8601), when available. */
+  readonly sessionExpiresUtc = this.persistedExpiresUtc.asReadonly();
+
   /** True when a token string exists (may be expired). */
   readonly hasSession = computed(() => !!this.persistedToken());
 
