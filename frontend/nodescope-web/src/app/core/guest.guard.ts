@@ -3,10 +3,10 @@ import { Router, type CanActivateFn } from '@angular/router';
 
 import { AuthTokenStorage } from './auth-token.storage';
 
-/** Prevents revisiting credential capture while session material already exists locally. */
+/** Prevents revisiting credential capture while a non-expired session exists locally. */
 export const guestGuard: CanActivateFn = () => {
   const storage = inject(AuthTokenStorage);
   const router = inject(Router);
 
-  return storage.hasSession() ? router.parseUrl('/dashboard') : true;
+  return storage.hasValidSession() ? router.parseUrl('/dashboard') : true;
 };
