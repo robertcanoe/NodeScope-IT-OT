@@ -56,7 +56,13 @@ public sealed class LocalImportFileStorage(IHostEnvironment environment, IOption
         var physicalPath = Path.Combine(directory, sanitizedOriginalFileName);
         Directory.CreateDirectory(Path.GetDirectoryName(physicalPath)!);
 
-        await using var target = File.Create(physicalPath);
+        await using var target = new FileStream(
+            physicalPath,
+            FileMode.Create,
+            FileAccess.Write,
+            FileShare.None,
+            bufferSize: 81920,
+            FileOptions.Asynchronous | FileOptions.SequentialScan);
         await content.CopyToAsync(target, cancellationToken).ConfigureAwait(false);
     }
 
@@ -83,20 +89,23 @@ public sealed class LocalImportFileStorage(IHostEnvironment environment, IOption
             return Task.CompletedTask;
         }
 
-        foreach (var entry in Directory.EnumerateFileSystemEntries(root))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (File.Exists(entry))
+        return Task.Run(
+            () =>
             {
-                File.Delete(entry);
-            }
-            else if (Directory.Exists(entry))
-            {
-                Directory.Delete(entry, recursive: true);
-            }
-        }
-
-        return Task.CompletedTask;
+                foreach (var entry in Directory.EnumerateFileSystemEntries(root))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (File.Exists(entry))
+                    {
+                        File.Delete(entry);
+                    }
+                    else if (Directory.Exists(entry))
+                    {
+                        Directory.Delete(entry, recursive: true);
+                    }
+                }
+            },
+            cancellationToken);
     }
 
     private string GetUploadDirectory(Guid projectId, Guid importJobId) =>
