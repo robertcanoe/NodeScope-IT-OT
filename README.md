@@ -6,36 +6,34 @@
 
 ## 📌 Qué es NodeScope
 
-NodeScope es una herramienta operativa orientada a equipos de **Software Factory OT** que trabajan con exportaciones de sistemas SCADA/HMI, configuraciones de canales OPC UA y registros maestros de variables de PLC.
+NodeScope es una herramienta operativa orientada a equipos que trabajan con exportaciones de sistemas SCADA/HMI, configuraciones de canales OPC UA y registros maestros de variables de PLC.
 
 El flujo central del sistema consiste en:
 
 1. **Subir** un dataset técnico (Excel, CSV o JSON exportado desde el entorno industrial)
 2. **Procesar** y normalizar automáticamente las variables mediante el motor Python
 3. **Cruzar** los datos con las fuentes de verdad (Excel maestro de variables)
-4. **Detectar incidencias**: duplicados de NodeId, tipos inconsistentes, variables huerfanas, namespaces mal configurados
+4. **Detectar incidencias**: duplicados de NodeId, tipos inconsistentes, variables huérfanas, namespaces mal configurados
 5. **Visualizar** el resultado en un dashboard con métricas, tabla navegable y filtros
 6. **Exportar** informes HTML interactivos y CSVs derivados con trazabilidad completa
 
 ---
 
-## 🏭 Contexto IT/OT: Líneas de defensa
+## 🏭 Contexto IT/OT: Líneas de producción
 
-NodeScope nació directamente del trabajo real con líneas de producción industriales. Cada **línea de defensa** es una instalación con su propio PLC, configuración OPC UA y pantallas SCADA/HMI.
-
-La plataforma entiende y gestiona la estructura de estas líneas:
+NodeScope está diseñado para gestionar instalaciones industriales con múltiples líneas de producción, cada una con su propio PLC, configuración OPC UA y pantallas SCADA/HMI.
 
 | Línea | Descripción |
 |---|---|
-| **HPA** | Línea principal, referencia de estructura canonica |
-| **NAV (NavShield)** | Segunda línea de defensa |
-| **LTR / REP** | Tercera línea de defensa |
+| **Línea A** | Línea principal, referencia de estructura canónica |
+| **Línea B** | Segunda línea de producción |
+| **Línea C** | Tercera línea de producción |
 
 Cada línea exporta tres tipos de archivos que NodeScope procesa y cruza:
 
-- **JSON SCADA/HMI** — exportado desde el HMI (p.ej. `LINEA_HPA.json`): contiene las variables vinculadas a los sinópticos, afacet y producción.
-- **JSON del Canal** — configuración del canal OPC UA (p.ej. `channel_LINEA_HPA.json`): define qué variables expone el PLC al servidor OPC UA.
-- **Excel maestro de variables** — fuente de verdad absoluta (p.ej. `Variables PLC - SCADA LTR25 - HPA.xlsx`): lista oficial de variables aprobadas con sus tipos, DBs y namespaces.
+- **JSON SCADA/HMI** — exportado desde el HMI: contiene las variables vinculadas a los sinópticos y pantallas de producción.
+- **JSON del Canal** — configuración del canal OPC UA: define qué variables expone el PLC al servidor OPC UA.
+- **Excel maestro de variables** — fuente de verdad absoluta: lista oficial de variables aprobadas con sus tipos, DBs y namespaces.
 
 ---
 
@@ -45,13 +43,11 @@ El motor de análisis (Python) realiza un **cruce exhaustivo** entre las tres fu
 
 - Detecta variables presentes en el SCADA pero ausentes en el canal OPC UA
 - Detecta variables del canal que no aparecen en el Excel maestro
-- Valida consistencia de tipos (ej. `String` vs `DInt`, arrays de 40 elementos vs array único)
+- Valida consistencia de tipos entre PLC, canal y SCADA
 - Identifica NodeIds duplicados o mal formados
 - Detecta variables huérfanas sin DB asignado
 - Genera un informe de auditoría con severidad: `[CRITICO]`, `[ALTO]`, `[MEDIO]`
 - Exporta CSV con los resultados filtrados y descargables
-
-> **Caso real resuelto con NodeScope:** Detección de que el diálogo PLC-MES de HPA había migrado de 40 variables `Stao(u)Accion_0_..._39_` separadas a un único `Array[0..40] of String`, mientras NAV y REP aún usaban la estructura antigua — lo que generaba inconsistencias invisibles en los cruces manuales.
 
 ---
 
@@ -130,7 +126,7 @@ URL del frontend: `http://localhost:4200`
 ### 4) Generar informe HTML desde CLI
 
 ```bash
-python3 python/processor/generarInformeNodos.py data-prueba/Nodos_DBPruebasFormacion.xlsx
+python3 python/processor/generarInformeNodos.py input.xlsx
 ```
 
 Con salida personalizada y límite de filas:
