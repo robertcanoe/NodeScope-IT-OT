@@ -1,23 +1,107 @@
 # NodeScope IT/OT
 
-NodeScope es una plataforma multi-componente para ingestar, validar y explorar datasets tecnicos en entornos IT/OT.
+> Plataforma web multi-componente para ingestar, analizar, validar y explorar datasets técnicos en entornos IT/OT industriales.
 
-## Estructura del repositorio
+---
 
-- `src/`: backend en .NET y capas de dominio/aplicacion.
-- `frontend/nodescope-web/`: aplicacion web Angular.
-- `python/processor/`: procesamiento de ingesta y generacion de informes en Python.
-- `storage/`: almacenamiento local de subidas y artefactos generados (ignorado en git).
-- `compose.yaml`: servicio local de PostgreSQL.
+## 📌 Qué es NodeScope
 
-## Requisitos
+NodeScope es una herramienta operativa orientada a equipos de **Software Factory OT** que trabajan con exportaciones de sistemas SCADA/HMI, configuraciones de canales OPC UA y registros maestros de variables de PLC.
+
+El flujo central del sistema consiste en:
+
+1. **Subir** un dataset técnico (Excel, CSV o JSON exportado desde el entorno industrial)
+2. **Procesar** y normalizar automáticamente las variables mediante el motor Python
+3. **Cruzar** los datos con las fuentes de verdad (Excel maestro de variables)
+4. **Detectar incidencias**: duplicados de NodeId, tipos inconsistentes, variables huerfanas, namespaces mal configurados
+5. **Visualizar** el resultado en un dashboard con métricas, tabla navegable y filtros
+6. **Exportar** informes HTML interactivos y CSVs derivados con trazabilidad completa
+
+---
+
+## 🏭 Contexto IT/OT: Líneas de defensa
+
+NodeScope nació directamente del trabajo real con líneas de producción industriales. Cada **línea de defensa** es una instalación con su propio PLC, configuración OPC UA y pantallas SCADA/HMI.
+
+La plataforma entiende y gestiona la estructura de estas líneas:
+
+| Línea | Descripción |
+|---|---|
+| **HPA** | Línea principal, referencia de estructura canonica |
+| **NAV (NavShield)** | Segunda línea de defensa |
+| **LTR / REP** | Tercera línea de defensa |
+
+Cada línea exporta tres tipos de archivos que NodeScope procesa y cruza:
+
+- **JSON SCADA/HMI** — exportado desde el HMI (p.ej. `LINEA_HPA.json`): contiene las variables vinculadas a los sinópticos, afacet y producción.
+- **JSON del Canal** — configuración del canal OPC UA (p.ej. `channel_LINEA_HPA.json`): define qué variables expone el PLC al servidor OPC UA.
+- **Excel maestro de variables** — fuente de verdad absoluta (p.ej. `Variables PLC - SCADA LTR25 - HPA.xlsx`): lista oficial de variables aprobadas con sus tipos, DBs y namespaces.
+
+---
+
+## 🔍 Capacidades de análisis
+
+El motor de análisis (Python) realiza un **cruce exhaustivo** entre las tres fuentes:
+
+- Detecta variables presentes en el SCADA pero ausentes en el canal OPC UA
+- Detecta variables del canal que no aparecen en el Excel maestro
+- Valida consistencia de tipos (ej. `String` vs `DInt`, arrays de 40 elementos vs array único)
+- Identifica NodeIds duplicados o mal formados
+- Detecta variables huérfanas sin DB asignado
+- Genera un informe de auditoría con severidad: `[CRITICO]`, `[ALTO]`, `[MEDIO]`
+- Exporta CSV con los resultados filtrados y descargables
+
+> **Caso real resuelto con NodeScope:** Detección de que el diálogo PLC-MES de HPA había migrado de 40 variables `Stao(u)Accion_0_..._39_` separadas a un único `Array[0..40] of String`, mientras NAV y REP aún usaban la estructura antigua — lo que generaba inconsistencias invisibles en los cruces manuales.
+
+---
+
+## 🏗️ Arquitectura
+
+```
+NodeScope IT/OT
+├── src/                         # Backend .NET 9
+│   ├── NodeScope.Api/           # API REST + JWT Auth + Swagger
+│   ├── NodeScope.Application/   # Casos de uso y orquestación
+│   ├── NodeScope.Domain/        # Entidades y lógica de negocio
+│   ├── NodeScope.Infrastructure/ # PostgreSQL + EF Core + persistencia
+│   ├── NodeScope.Worker/        # Worker de ingesta asincróna
+│   ├── NodeScope.AppHost/       # .NET Aspire orquestador
+│   └── NodeScope.ServiceDefaults/ # Configuración compartida y observabilidad
+├── frontend/nodescope-web/      # SPA Angular
+│   ├── Dashboard con métricas
+│   ├── Tabla navegable con filtros
+│   ├── Gestión de importaciones e historial
+│   └── Visor de incidencias y comparativas
+├── python/processor/            # Motor de análisis y reportes
+│   ├── Normalización de columnas
+│   ├── Cruce de fuentes (SCADA/Canal/Excel)
+│   ├── Detección de incidencias
+│   ├── Generación de JSON canónico
+│   └── Generación de informe HTML interactivo + CSVs
+└── compose.yaml                 # PostgreSQL local vía Docker
+```
+
+**Stack tecnológico:**
+
+| Capa | Tecnología |
+|---|---|
+| Backend | .NET 9 · ASP.NET Core · EF Core · SignalR · JWT |
+| Base de datos | PostgreSQL (Docker) |
+| Observabilidad | OpenTelemetry · .NET Aspire |
+| Frontend | Angular · TypeScript · SCSS · RxJS · Signals |
+| Motor de análisis | Python 3.11+ · pandas · openpyxl · jinja2 |
+| Gestor de paquetes | pnpm (frontend) |
+
+---
+
+## 🚀 Desarrollo local
+
+### Requisitos
 
 - .NET SDK 9
 - Node.js 20+ y `pnpm`
-- Python 3.11+ (3.12 validado)
-- Docker (para PostgreSQL local)
-
-## Desarrollo local
+- Python 3.11+ (validado en 3.12)
+- Docker
 
 ### 1) Iniciar PostgreSQL
 
@@ -31,7 +115,7 @@ docker compose up -d
 dotnet run --project src/NodeScope.Api/NodeScope.Api.csproj
 ```
 
-URL por defecto de la API: `http://localhost:5003`
+URL de la API: `http://localhost:5003` — Swagger en `/swagger`
 
 ### 3) Iniciar frontend
 
@@ -41,32 +125,34 @@ pnpm install
 pnpm start
 ```
 
-URL por defecto del frontend: `http://localhost:4200`
+URL del frontend: `http://localhost:4200`
 
-## Procesador Python e informes
-
-El script del worker de ingesta se configura en:
-
-- `src/NodeScope.Api/appsettings.json` -> `Processing.ProcessorScriptPath`
-
-Script CLI para generar informe HTML interactivo:
+### 4) Generar informe HTML desde CLI
 
 ```bash
 python3 python/processor/generarInformeNodos.py data-prueba/Nodos_DBPruebasFormacion.xlsx
 ```
 
-Salida personalizada y limite de filas:
+Con salida personalizada y límite de filas:
 
 ```bash
 python3 python/processor/generarInformeNodos.py input.xlsx output.html --limite-filas 5000
 ```
 
-## Usuario de desarrollo por defecto
+---
 
-- Correo: `dev@nodescope.local`
-- Contrasena: `ChangeMe123!`
+## 🔐 Credenciales de desarrollo
 
-## Notas
+| Campo | Valor |
+|---|---|
+| Correo | `dev@nodescope.local` |
+| Contraseña | `ChangeMe123!` |
 
-- Los artefactos generados, caches y salidas de compilacion se excluyen con `.gitignore`.
-- Mantener utilidades en su dominio funcional (por ejemplo, scripts CLI de Python dentro de `python/processor/`).
+---
+
+## 📌 Notas
+
+- Los artefactos generados, cachés y salidas de compilación se excluyen con `.gitignore`.
+- El motor Python se invoca desde el Worker .NET; no actúa como backend independiente.
+- Mantener utilidades en su dominio funcional (scripts CLI de Python dentro de `python/processor/`).
+- El gestor de paquetes del frontend es **obligatoriamente `pnpm`**; no usar npm ni yarn.
